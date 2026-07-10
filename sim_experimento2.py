@@ -1,4 +1,3 @@
-
 import random
 import math
 import json
@@ -115,6 +114,27 @@ if __name__ == "__main__":
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     csv_file = f"resultados_grangier_{timestamp}.csv"
     
+    json_file_2d = f"simulacion_grangier_2d_{timestamp}.json"
+    json_file_3d = f"simulacion_grangier_3d_{timestamp}.json"
+    
+    datos_2d = {
+        "modo": "2 detectores (Luz clásica - Poisson)",
+        "estadisticas": stats_2d,
+        "corridas": corridas_2d
+    }
+    
+    datos_3d = {
+        "modo": "3 detectores (Fotones individuales - Sub-Poisson)",
+        "estadisticas": stats_3d,
+        "corridas": corridas_3d
+    }
+    
+    with open(json_file_2d, 'w', encoding='utf-8') as f:
+        json.dump(datos_2d, f, indent=4)
+    
+    with open(json_file_3d, 'w', encoding='utf-8') as f:
+        json.dump(datos_3d, f, indent=4)
+    
     with open(csv_file, "w", encoding="utf-8") as f:
         f.write("Numero_Corrida,Modo_Detectores,Nt,Nr,Nc,g2_calculado\n")
         for i, c in enumerate(corridas_2d, 1):
@@ -122,7 +142,8 @@ if __name__ == "__main__":
         for i, c in enumerate(corridas_3d, 1):
             f.write(f"{i+15},3,{c['conteo_transmitido_Nt']},{c['conteo_reflejado_Nr']},{c['coincidencias_Nc']},{c['g2_calculado']}\n")
 
-    print(f"Generado: {json_file}")
+    print(f"Generado: {json_file_2d}")
+    print(f"Generado: {json_file_3d}")
     print(f"Generado: {csv_file}")
     print(f"2D: g(2) = {stats_2d['media']} +/- {stats_2d['desv_std']}")
     print(f"3D: g(2) = {stats_3d['media']} +/- {stats_3d['desv_std']}")
