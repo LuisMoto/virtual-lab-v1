@@ -1,0 +1,8 @@
+{
+    "configuracion": {
+        "parametros": {
+            "num_pulsos": 1000,
+            "num_corridas": 1
+        }
+    }
+}
