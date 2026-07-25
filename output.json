@@ -1,9 +1,0 @@
-{
-    "status": "error",
-    "experimento": "grangier_hwp",
-    "mensaje": "Error inesperado ejecutando 'grangier_hwp': name 'simulacion_grangier' is not defined",
-    "detalles": {
-        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\arman\\Downloads\\Grangier\\Backend\\main.py\", line 46, in main\n    resultado = modulo.ejecutar(params)\n                ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\arman\\Downloads\\Grangier\\Backend\\simulator.py\", line 134, in ejecutar\n    c = simulacion_grangier.simular_experimento_grangier(\n        ^^^^^^^^^^^^^^^^^^^\nNameError: name 'simulacion_grangier' is not defined\n"
-    },
-    "timestamp": "2026-07-18T22:44:10.559345"
-}

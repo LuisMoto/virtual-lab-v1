@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional, Tuple
 
 BACKOFF_BASE_S = 0.05
 
-
 def escribir_json_atomico(path: str, data: dict) -> None:
     directorio = os.path.dirname(os.path.abspath(path)) or "."
     fd, tmp_path = tempfile.mkstemp(dir=directorio, prefix=".tmp_", suffix=".json")
@@ -26,7 +25,6 @@ def escribir_json_atomico(path: str, data: dict) -> None:
                 pass
         raise
 
-
 def intentar_escribir_texto(path: str, contenido: str) -> Optional[str]:
     try:
         with open(path, "w", encoding="utf-8", newline="") as f:
@@ -34,7 +32,6 @@ def intentar_escribir_texto(path: str, contenido: str) -> Optional[str]:
         return None
     except Exception as e:
         return str(e)
-
 
 def construir_respuesta_ok(experimento: str, resultados: Dict[str, Any],
                             meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -45,7 +42,6 @@ def construir_respuesta_ok(experimento: str, resultados: Dict[str, Any],
         "meta": meta or {},
     }
 
-
 def construir_respuesta_error(mensaje: str, detalles: Any = None,
                                experimento: Optional[str] = None) -> Dict[str, Any]:
     return {
@@ -55,7 +51,6 @@ def construir_respuesta_error(mensaje: str, detalles: Any = None,
         "detalles": detalles or {},
         "timestamp": datetime.datetime.now().isoformat(),
     }
-
 
 def leer_input_con_reintentos(path: str, intentos: int = 3) -> Tuple[Optional[dict], Optional[str]]:
     if not os.path.exists(path):
@@ -78,7 +73,6 @@ def leer_input_con_reintentos(path: str, intentos: int = 3) -> Tuple[Optional[di
 
     return None, ultimo_error
 
-
 def extraer_parametros(datos_entrada: Optional[dict]) -> dict:
     if not datos_entrada:
         return {}
@@ -86,7 +80,6 @@ def extraer_parametros(datos_entrada: Optional[dict]) -> dict:
         return datos_entrada.get("configuracion", {}).get("parametros", {}) or {}
     except AttributeError:
         return {}
-
 
 def validar_entero(valor: Any, nombre: str, minimo: Optional[int] = None,
                     maximo: Optional[int] = None) -> Tuple[bool, str, Optional[int]]:
@@ -100,7 +93,6 @@ def validar_entero(valor: Any, nombre: str, minimo: Optional[int] = None,
         return False, f"{nombre} excede el máximo permitido ({maximo}, recibido {v}).", None
     return True, "", v
 
-
 def validar_flotante_rango(valor: Any, nombre: str, minimo: float = 0.0,
                             maximo: float = 1.0) -> Tuple[bool, str, Optional[float]]:
     try:
@@ -110,7 +102,6 @@ def validar_flotante_rango(valor: Any, nombre: str, minimo: float = 0.0,
     if not (minimo <= v <= maximo):
         return False, f"{nombre} debe estar en [{minimo}, {maximo}] (recibido {v}).", None
     return True, "", v
-
 
 def emitir_progreso(payload: Dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False), flush=True)

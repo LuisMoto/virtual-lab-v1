@@ -13,11 +13,9 @@ MAX_OPERACIONES_TOTALES = 100_000_000
 
 EXPERIMENTO = "grangier_hwp"
 
-
 def transmitancia_hwp(angulo_grados: float, offset_grados: float = 0.0) -> float:
     theta = math.radians(angulo_grados + offset_grados)
     return math.cos(2.0 * theta) ** 2
-
 
 def generar_angulos(inicio: float, fin: float, paso: float) -> List[float]:
     angulos = []
@@ -26,7 +24,6 @@ def generar_angulos(inicio: float, fin: float, paso: float) -> List[float]:
         angulos.append(round(actual, 6))
         actual += paso
     return angulos
-
 
 def validar_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
     ok, msg, num_pulsos = utils.validar_entero(params.get("num_pulsos", 2000),
@@ -84,6 +81,53 @@ def validar_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
     })
     return True, "", valores
 
+def simular_experimento_fisico(modo: int, num_pulsos: int, rng: random.Random,
+                               prob_testigo: float, bs_trans: float,
+                               dark_count_rate: float, detector_efficiency: float) -> dict:
+    Nt = 0
+    Nr = 0
+    Nc = 0
+    Ni = 0
+
+    for _ in range(num_pulsos):
+        click_t = False
+        click_r = False
+        click_i = False
+
+        if rng.random() < prob_testigo:
+            if rng.random() < detector_efficiency: click_i = True
+            if rng.random() < bs_trans:
+                if rng.random() < detector_efficiency: click_t = True
+            else:
+                if rng.random() < detector_efficiency: click_r = True
+
+        if rng.random() < dark_count_rate: click_i = True
+        if rng.random() < dark_count_rate: click_t = True
+        if rng.random() < dark_count_rate: click_r = True
+
+        if click_i: Ni += 1
+        if click_t: Nt += 1
+        if click_r: Nr += 1
+        if click_t and click_r: Nc += 1
+
+    g2 = 0.0
+    insuficiente = True
+    if Nt > 0 and Nr > 0:
+        if modo == 3 and Ni > 0:
+            g2 = (Nc * Ni) / (Nt * Nr)
+            insuficiente = False
+        elif modo == 2:
+            g2 = (Nc * num_pulsos) / (Nt * Nr)
+            insuficiente = False
+
+    return {
+        "conteo_testigo_Ni": Ni,
+        "conteo_transmitido_Nt": Nt,
+        "conteo_reflejado_Nr": Nr,
+        "coincidencias_Nc": Nc,
+        "g2_calculado": round(g2, 6),
+        "estadistica_insuficiente": insuficiente
+    }
 
 def _emitir_progreso_corrida(angulo: float, modo: int, num_test: int,
                               corrida: Dict[str, Any], cfg: Dict[str, Any]) -> None:
@@ -101,7 +145,6 @@ def _emitir_progreso_corrida(angulo: float, modo: int, num_test: int,
         "NGTR": corrida["coincidencias_Nc"],
         "g2": corrida["g2_calculado"],
     })
-
 
 def ejecutar(params: dict) -> Dict[str, Any]:
     inicio = time.time()
@@ -131,7 +174,7 @@ def ejecutar(params: dict) -> Dict[str, Any]:
 
             corridas_2d = []
             for i in range(cfg["num_corridas"]):
-                c = simulacion_grangier.simular_experimento_grangier(
+                c = simular_experimento_fisico(
                     2, cfg["num_pulsos"], rng, prob_testigo=cfg["prob_testigo"],
                     bs_trans=bs_trans_efectivo, dark_count_rate=cfg["dark_count_rate"],
                     detector_efficiency=cfg["detector_efficiency"])
@@ -140,7 +183,7 @@ def ejecutar(params: dict) -> Dict[str, Any]:
 
             corridas_3d = []
             for i in range(cfg["num_corridas"]):
-                c = simulacion_grangier.simular_experimento_grangier(
+                c = simular_experimento_fisico(
                     3, cfg["num_pulsos"], rng, prob_testigo=cfg["prob_testigo"],
                     bs_trans=bs_trans_efectivo, dark_count_rate=cfg["dark_count_rate"],
                     detector_efficiency=cfg["detector_efficiency"])
@@ -198,7 +241,6 @@ def ejecutar(params: dict) -> Dict[str, Any]:
     utils.emitir_progreso({"tipo": "fin", "experimento": EXPERIMENTO, "status": "ok"})
     return utils.construir_respuesta_ok(EXPERIMENTO, resultados, meta)
 
-
 if __name__ == "__main__":
     datos_entrada, error_lectura = utils.leer_input_con_reintentos("input.json")
     if error_lectura:
@@ -206,4 +248,4 @@ if __name__ == "__main__":
     else:
         resultado = ejecutar(utils.extraer_parametros(datos_entrada))
     utils.escribir_json_atomico("output.json", resultado)
-    print(f"[lamina_mediaonda] status={resultado['status']}")
+    print(f"[simulator] status={resultado['status']}")
