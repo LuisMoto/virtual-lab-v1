@@ -1,20 +1,9 @@
 {
     "status": "ok",
-    "experimento": "grangier_hwp",
+    "experimento": "interferencia_ondas",
     "resultados": {
-        "coincidencia_ventana_ns": 5.0,
-        "barrido_hwp": [
-            {
-                "angulo_grados": 0.0,
-                "tres_detectores": {
-                    "corridas": [
-                        {
-                            "coincidencias_Nc": 2,
-                            "g2_calculado": 0.181021
-                        }
-                    ]
-                }
-            }
-        ]
+        "fase_grados": 45.0,
+        "intensidad_relativa": 0.853553,
+        "visibilidad": 0.998
     }
 }

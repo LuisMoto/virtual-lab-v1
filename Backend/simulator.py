@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import utils
 
+
 MAX_NUM_PULSOS = 2_000_000
 MAX_CORRIDAS = 200
 MAX_ANGULOS = 360
@@ -201,13 +202,26 @@ def ejecutar(params: dict) -> Dict[str, Any]:
         return utils.construir_respuesta_error(f"Error en la simulación: {e}",
                                                  experimento=EXPERIMENTO)
 
+    # --- Resultado LIVIANO para Unity: coincide exactamente con las clases C# ---
+    # (JsonSalida / Resultados / PuntoBarrido / Detectores / Corrida en LectorDatosGrangier.cs)
+    # El detalle completo de todos los ángulos/corridas ya vive en el CSV de abajo;
+    # esto es solo el snapshot final que se muestra en los paneles de la Escena 1.
+    primera_corrida = barrido[0]["tres_detectores"]["corridas"][0]
     resultados = {
         "coincidencia_ventana_ns": cfg["coincidencia_ventana_ns"],
-        "duracion_prueba_us": cfg["duracion_prueba_us"],
-        "descripcion": ("Barrido de lamina de media onda (HWP) antes del beam splitter. "
-                         "bs_trans_efectivo = cos^2(2*(angulo+offset)). Datos crudos por "
-                         "corrida unicamente, sin promedios ni varianza calculados aqui."),
-        "barrido_hwp": barrido,
+        "barrido_hwp": [
+            {
+                "angulo_grados": barrido[0]["angulo_grados"],
+                "tres_detectores": {
+                    "corridas": [
+                        {
+                            "coincidencias_Nc": primera_corrida["coincidencias_Nc"],
+                            "g2_calculado": primera_corrida["g2_calculado"],
+                        }
+                    ]
+                },
+            }
+        ],
     }
     meta = {
         "tiempo_ejecucion_s": round(time.time() - inicio, 3),
@@ -215,6 +229,7 @@ def ejecutar(params: dict) -> Dict[str, Any]:
         "config": cfg,
     }
 
+    # --- CSV completo (todos los ángulos, todas las corridas) para análisis externo ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_csv = f"resultados_grangier_hwp_{timestamp}_{semilla}.csv"
     lineas = ["Angulo_grados,Bs_trans_efectivo,Modo_Detectores,NumTest,CoinWin_ns,Tp_us,"
@@ -242,10 +257,14 @@ def ejecutar(params: dict) -> Dict[str, Any]:
     return utils.construir_respuesta_ok(EXPERIMENTO, resultados, meta)
 
 if __name__ == "__main__":
+    # Permite seguir probando este archivo de forma aislada: python simulator.py
+    # Usa la MISMA función ejecutar() que usa main.py, así nunca hay divergencia
+    # entre lo que ves aquí y lo que Unity recibe en un flujo real.
     datos_entrada, error_lectura = utils.leer_input_con_reintentos("input.json")
     if error_lectura:
         resultado = utils.construir_respuesta_error(error_lectura, experimento=EXPERIMENTO)
     else:
         resultado = ejecutar(utils.extraer_parametros(datos_entrada))
+
     utils.escribir_json_atomico("output.json", resultado)
-    print(f"[simulator] status={resultado['status']}")
+    print(f"[simulator] status={resultado.get('status')}")
