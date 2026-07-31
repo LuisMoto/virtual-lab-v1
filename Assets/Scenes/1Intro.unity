@@ -2506,6 +2506,130 @@ PrefabInstance:
       propertyPath: m_RenderMode
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[0]
+      value: "\xA1Hola! \xA1Qu\xE9 gusto verte! Bienvenido al simulador en realidad
+        virtual del experimento de Grangier. \n\xA1Presiona A en la PC para cambiar
+        de di\xE1logo!"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[1]
+      value: "Mi nombre es F\xEDsikita. \xA1Mucho gusto! En este entorno podr\xE1s
+        familiarizarte mejor con el fen\xF3meno de correlaci\xF3n y anticorrelaci\xF3n
+        de fotones individuales, as\xED como con el montaje experimental de Grangier:"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[2]
+      value: " el cristal BBO no lineal que genera los pares de fotones, el divisor
+        de haz y los detectores de los fotones reflejado, se\xF1al y testigo."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[3]
+      value: "Podr\xE1s visualizar las funciones de correlaci\xF3n de segundo orden
+        $g^{(2)}_{2D}$ y $g^{(2)}_{3D}$, que te permitir\xE1n distinguir si la luz
+        se comporta como onda o como part\xEDcula."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[4]
+      value: "Recuerda que diremos que una series es: Correlacionada: para cualquier
+        evento en el tiempo $t$, existe otro evento en un tiempo menor a $t+\\tau_0$
+        (hay predictibilidad si se detecta un fot\xF3n, existe otro asociado a \xE9l)."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[5]
+      value: "Mientras que una Serie anticorrelacionada: si ocurre un evento en $t$,
+        no existe ning\xFAn otro dentro del intervalo $t+\\tau_0$."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[6]
+      value: "Otra cosa importante en teor\xEDa que no debes dejar desapercibido
+        es que lo que buscamos es probar experimentalmente que la luz puede comportarse
+        como part\xEDcula, no solo como onda. "
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[7]
+      value: "En el montaje ver\xE1s un l\xE1ser violeta de 405 nm que excita un
+        cristal BBO tipo I (no lineal) y produce pares de fotones de estad\xEDstica
+        poissoniana..."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[8]
+      value: "...divididos en haz se\xF1al (va al divisor de haz 50:50, con detectores
+        $D_T$ y $D_R$) y haz testigo (va directo a su propio detector)."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[9]
+      value: "Al enviar fotones uno por uno al divisor de haz, se observa si caen
+        en condici\xF3n de correlaci\xF3n, anticorrelaci\xF3n o descorrelaci\xF3n
+        (\xA1SORPRESA! Investiga su definici\xF3n) entre los dos detectores. "
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[10]
+      value: "Observa que en la anticorrelaci\xF3n, el fot\xF3n llega a $D_T$ o a
+        $D_R$, nunca a ambos y firma el comportamiento de part\xEDcula."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[11]
+      value: "Tambi\xE9n nota que el fot\xF3n testigo se produce casi simult\xE1neamente
+        al fot\xF3n se\xF1al (diferencia $\\approx 120$ ns) y funciona como \"heraldo\",
+        lo que permite establecer una triple correlaci\xF3n y localizar con certeza
+        al fot\xF3n transmitido/reflejado."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[12]
+      value: "Por \xFAltimo, me gustar\xEDa dejarte con las siguientes preguntas: "
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[13]
+      value: "1) \xBFSin el fot\xF3n testigo la correlaci\xF3n de los fotones consigo
+        mismos c\xF3mo luce? \n\xBFPor qu\xE9?  "
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[14]
+      value: "2) \xBF Y con el fot\xF3n testigo (que revela la trayectoria del fot\xF3n
+        tras el divisor de haz) \xBFQu\xE9 comportamiento confirmas y por qu\xE9?"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[15]
+      value: "3)\xBFQu\xE9 significa obtener un amontonamiento y/o un anti-amontonamiento?
+        \xBFQu\xE9 implicaciones tienen ampliar la ventana temporal? \xBFC\xF3mo
+        se estabiliza o desestabiliza el sistema?"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[16]
+      value: "4) Analiza los datos y los resultados de la simulaci\xF3n seg\xFAn
+        las indicaciones de t\xFA profesor (deber\xE1s graficar los datos o hacer
+        histogramas de ser necesario): "
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[17]
+      value: "Finalmente, para  activar el l\xE1ser y por ende comenzar el experimento,
+        debes presionar la tecla \xA8space\xA8 en tu computadora."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
+        type: 3}
+      propertyPath: dialogues.Array.data[18]
+      value: " Y muy importante con el gatillo de de tu mango de tu joystick derecho
+        deber\xE1s tocar el objeto rosa que est\xE1 junto a la mesa. "
+      objectReference: {fileID: 0}
     - target: {fileID: 4766548093815645374, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
       propertyPath: m_Pivot.x
