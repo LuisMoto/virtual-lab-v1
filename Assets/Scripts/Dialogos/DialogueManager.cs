@@ -1,6 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement; // Librería necesaria para cambiar de escenas
 
@@ -13,27 +13,34 @@ public class DialogueManager : MonoBehaviour
 
     [Header("Configuración de Velocidad")]
     public float normalSpeed = 0.04f;
-    public float fastSpeed = 0.01f;
+
+    [Header("Interacción VR (apuntar + gatillo)")]
+    [Tooltip("Botón invisible que cubre el DialogueBox completo. Apuntar + gatillo avanza el diálogo.")]
+    public Button botonAvanzar;
 
     [Header("Sistema de Decisiones")]
     public GameObject panelDecisiones; // El contenedor de las opciones
-    public TMP_Text textoOpcion1;      // "2 Detectores"
-    public TMP_Text textoOpcion2;      // "3 Detectores"
-    public Color colorSeleccionado = Color.yellow; // Color cuando está seleccionada
-    public Color colorNormal = Color.white;        // Color cuando no está seleccionada
+    [Tooltip("Botón de la opción '2 Detectores' (ya tiene el componente Button)")]
+    public Button botonOpcion1;
+    [Tooltip("Botón de la opción '3 Detectores' (ya tiene el componente Button)")]
+    public Button botonOpcion2;
 
     private int currentDialogue = 0;
     private bool isTyping = false;
-    private Coroutine typingCoroutine;
-
-    // Variables de control para las decisiones
     private bool isChoosing = false;
-    private int currentChoice = 0; // 0 = Opción 1, 1 = Opción 2
+    private Coroutine typingCoroutine;
 
     void Start()
     {
-        // Asegurarnos de que el panel empiece apagado
+        // Aseguramos que el panel empiece apagado
         if (panelDecisiones != null) panelDecisiones.SetActive(false);
+
+        // Todo el flujo se resuelve con el Ray Interactor de los controles:
+        // apuntar + gatillo dispara el onClick del botón señalado.
+        // No hay dependencia de teclado en ningún punto del script.
+        botonAvanzar.onClick.AddListener(OnAvanzar);
+        botonOpcion1.onClick.AddListener(() => SeleccionarOpcion(0));
+        botonOpcion2.onClick.AddListener(() => SeleccionarOpcion(1));
 
         dialogueText.text = "";
         if (dialogues.Length > 0)
@@ -42,32 +49,24 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // Si estamos en la fase de elegir, bloqueamos la tecla 'A' y activamos flechas
-        if (isChoosing)
-        {
-            HandleChoiceInput();
-            return;
-        }
-
-        // Comportamiento normal del diálogo
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            if (isTyping)
-            {
-                CompleteTextInstantly();
-            }
-            else
-            {
-                NextDialogue();
-            }
-        }
-    }
-
     void StartDialogue()
     {
         typingCoroutine = StartCoroutine(TypeLine(dialogues[currentDialogue]));
+    }
+
+    // Llamado por botonAvanzar.onClick (equivalente al KeyCode.A anterior)
+    void OnAvanzar()
+    {
+        if (isChoosing) return; // mientras se elige, este botón queda tapado por el panel de todas formas
+
+        if (isTyping)
+        {
+            CompleteTextInstantly();
+        }
+        else
+        {
+            NextDialogue();
+        }
     }
 
     void NextDialogue()
@@ -92,8 +91,7 @@ public class DialogueManager : MonoBehaviour
         foreach (char letter in line.ToCharArray())
         {
             dialogueText.text += letter;
-            float currentSpeed = Input.GetKey(KeyCode.S) ? fastSpeed : normalSpeed;
-            yield return new WaitForSeconds(currentSpeed);
+            yield return new WaitForSeconds(normalSpeed);
         }
 
         isTyping = false;
@@ -107,47 +105,27 @@ public class DialogueManager : MonoBehaviour
     }
 
     // ---------------------------------------------------------
-    // NUEVAS FUNCIONES PARA LAS DECISIONES
+    // SISTEMA DE DECISIONES
     // ---------------------------------------------------------
 
     void ShowChoices()
     {
         isChoosing = true;
         panelDecisiones.SetActive(true); // Aparece el menú
-        UpdateChoiceUI(); // Pintamos de color la opción seleccionada
+
+        // El resaltado de la opción señalada (antes colorSeleccionado/colorNormal
+        // + navegación con flechas) ahora lo maneja el propio componente Button:
+        // configura su "Highlighted Color" en amarillo desde el Inspector.
+        // Al apuntar con el control, Unity lo tiñe solo — sin código extra.
     }
 
-    void HandleChoiceInput()
+    void SeleccionarOpcion(int opcion)
     {
-        // Si presionas flecha arriba o abajo, cambiamos entre la opción 0 y la 1
-        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            currentChoice = (currentChoice == 0) ? 1 : 0;
-            UpdateChoiceUI();
-        }
-
-        // Si presionas Enter (normal o el del teclado numérico) confirmas
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            ConfirmChoice();
-        }
-    }
-
-    void UpdateChoiceUI()
-    {
-        // Pintamos el texto de amarillo si está seleccionado, o blanco si no lo está
-        textoOpcion1.color = (currentChoice == 0) ? colorSeleccionado : colorNormal;
-        textoOpcion2.color = (currentChoice == 1) ? colorSeleccionado : colorNormal;
-    }
-
-    void ConfirmChoice()
-    {
-        // Según lo que hayamos elegido, cargamos la escena correspondiente
-        if (currentChoice == 0)
+        if (opcion == 0)
         {
             SceneManager.LoadScene("DosDet");
         }
-        else if (currentChoice == 1)
+        else
         {
             SceneManager.LoadScene("TresDet");
         }
