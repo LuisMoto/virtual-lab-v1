@@ -23,6 +23,9 @@ public class ControladorSimulacionVR : MonoBehaviour
     [Tooltip("Se dispara repetidamente MIENTRAS Python corre, con la última corrida disponible.")]
     public ProgresoUnityEvent OnProgresoRecibido;
 
+    [Tooltip("Se dispara si Python no se pudo lanzar, terminó con código de salida distinto de 0, o escribió en stderr.")]
+    public UnityEvent<string> OnSimulacionError;
+
     private static readonly Dictionary<TipoExperimento, string> MapaExperimentos = new()
     {
         { TipoExperimento.GrangierHwp, "grangier_hwp" },
@@ -81,7 +84,9 @@ public class ControladorSimulacionVR : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            UnityEngine.Debug.LogError($"Error CRÍTICO al lanzar Python. Verifica 'rutaPython' en el Inspector. Detalle: {e.Message}");
+            string mensajeLanzamiento = $"No se pudo lanzar Python. Verifica 'rutaPython' en el Inspector. Detalle: {e.Message}";
+            UnityEngine.Debug.LogError(mensajeLanzamiento);
+            OnSimulacionError?.Invoke(mensajeLanzamiento);
             yield break;
         }
 
@@ -96,9 +101,20 @@ public class ControladorSimulacionVR : MonoBehaviour
             yield return null;
         }
 
-        if (!string.IsNullOrEmpty(erroresPython))
+        // OJO: antes solo se revisaba erroresPython (stderr). Un error de validación que
+        // Python maneja "limpiamente" (status:"error" en output.json, sin traceback) no
+        // escribe nada en stderr, pero SÍ termina con código de salida != 0. Sin este chequeo,
+        // ese caso caía en el "else" y la UI creía que la simulación había sido un éxito.
+        bool huboError = !string.IsNullOrEmpty(erroresPython) || proceso.ExitCode != 0;
+
+        if (huboError)
         {
-            UnityEngine.Debug.LogError($"Python se ejecutó pero reportó un error interno:\n{erroresPython}");
+            string mensajeError = !string.IsNullOrEmpty(erroresPython)
+                ? erroresPython
+                : $"Python terminó con código de salida {proceso.ExitCode}. Revisa output.json para el detalle.";
+
+            UnityEngine.Debug.LogError($"Python se ejecutó pero reportó un error interno:\n{mensajeError}");
+            OnSimulacionError?.Invoke(mensajeError);
         }
         else
         {
