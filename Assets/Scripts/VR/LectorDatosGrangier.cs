@@ -2,7 +2,6 @@ using UnityEngine;
 using System.IO;
 using TMPro;
 
-// Estructuras que calcan exactamente el output.json liviano de simulator.py
 [System.Serializable]
 public class JsonSalida
 {
@@ -20,6 +19,7 @@ public class Resultados
 public class PuntoBarrido
 {
     public float angulo_grados;
+    public Detectores dos_detectores;
     public Detectores tres_detectores;
 }
 [System.Serializable]
@@ -32,6 +32,7 @@ public class Corrida
 {
     public int coincidencias_Nc;
     public float g2_calculado;
+    public bool estadistica_insuficiente;
 }
 
 public class LectorDatosGrangier : MonoBehaviour
@@ -40,60 +41,58 @@ public class LectorDatosGrangier : MonoBehaviour
     public TextMeshProUGUI panelCoincidencias;
     public TextMeshProUGUI panelG2;
 
+    [Header("Modo de detectores de esta escena (2 o 3)")]
+    public int modoEsperado = 3;
+
     private string rutaArchivo;
 
     void Start()
     {
-        // El JSON vive en Backend/, no en la raíz del proyecto
         rutaArchivo = Path.Combine(Application.dataPath, "../Backend/output.json");
-        ActualizarPantallasFlotantes(); // muestra el último resultado guardado, si existe
+        ActualizarPantallasFlotantes();
     }
 
-    /// <summary>
-    /// Lectura del estado FINAL. Conectar al evento OnSimulacionCompletada
-    /// del ControladorSimulacionVR (se dispara una sola vez, al terminar Python).
-    /// </summary>
     public void ActualizarPantallasFlotantes()
     {
-        Debug.Log($"[DEBUG] Buscando JSON en: {rutaArchivo}");
-
         if (!File.Exists(rutaArchivo))
         {
-            Debug.LogError($"Aún no hay simulación. No se encontró: {rutaArchivo}");
+            Debug.LogError($"No se encontró: {rutaArchivo}");
             return;
         }
 
         string contenidoJson = File.ReadAllText(rutaArchivo);
-        Debug.Log($"[DEBUG] JSON crudo: {contenidoJson}");
-
         JsonSalida datos = JsonUtility.FromJson<JsonSalida>(contenidoJson);
-        Debug.Log($"[DEBUG] status='{datos.status}' | barrido_hwp.Length={datos.resultados?.barrido_hwp?.Length ?? -1}");
 
-        bool tieneCorridas = datos.status == "ok"
-            && datos.resultados.barrido_hwp.Length > 0
-            && datos.resultados.barrido_hwp[0].tres_detectores.corridas.Length > 0;
-
-        if (!tieneCorridas)
+        if (datos == null || datos.status != "ok" || datos.resultados == null
+            || datos.resultados.barrido_hwp == null || datos.resultados.barrido_hwp.Length == 0)
         {
-            Debug.LogWarning("El JSON fue leído, pero el status es error, está vacío, o no trae corridas.");
+            Debug.LogWarning("El JSON no trae un resultado válido.");
             return;
         }
 
-        Corrida corridaActual = datos.resultados.barrido_hwp[0].tres_detectores.corridas[0];
+        PuntoBarrido punto = datos.resultados.barrido_hwp[0];
+        Detectores det = modoEsperado == 2 ? punto.dos_detectores : punto.tres_detectores;
+
+        if (det == null || det.corridas == null || det.corridas.Length == 0)
+        {
+            Debug.LogWarning($"No hay corridas para modo {modoEsperado} en el JSON.");
+            return;
+        }
+
+        Corrida corridaActual = det.corridas[0];
         panelCoincidencias.text = $"Coincidencias (Nc): {corridaActual.coincidencias_Nc}";
-        panelG2.text = $"Valor g(2): {corridaActual.g2_calculado:F3}";
-        Debug.Log("Datos cuánticos leídos e inyectados con éxito.");
+        panelG2.text = corridaActual.estadistica_insuficiente
+            ? "Valor g(2): N/A (estadística insuficiente)"
+            : $"Valor g(2): {corridaActual.g2_calculado:F4}";
     }
 
-    /// <summary>
-    /// Lectura EN VIVO. Conectar al evento OnProgresoRecibido del
-    /// ControladorSimulacionVR (se dispara muchas veces mientras Python corre).
-    /// </summary>
     public void MostrarProgresoEnVivo(LineaProgreso p)
     {
-        if (p.modo_detectores != 3) return; // esta escena muestra el modo de 3 detectores
+        if (p.modo_detectores != modoEsperado) return;
 
         panelCoincidencias.text = $"Nc: {p.NGTR}  (ángulo {p.angulo_grados}°, corrida {p.num_test})";
-        panelG2.text = $"g(2): {p.g2:F3}";
+        panelG2.text = p.estadistica_insuficiente
+            ? "g(2): N/A (estadística insuficiente)"
+            : $"g(2): {p.g2:F4}";
     }
 }

@@ -8,7 +8,6 @@ using System.IO;
 public class ControladorSimulacionVR : MonoBehaviour
 {
     [Header("Conexión con Python")]
-    [Tooltip("Pon 'python' si está registrado en el PATH, o la ruta absoluta a python.exe")]
     public string rutaPython = "python";
     public string nombreScriptPython = "main.py";
 
@@ -17,13 +16,8 @@ public class ControladorSimulacionVR : MonoBehaviour
     public TipoExperimento experimento = TipoExperimento.GrangierHwp;
 
     [Header("Eventos")]
-    [Tooltip("Se dispara UNA vez, cuando Python termina y el archivo final está listo.")]
     public UnityEvent OnSimulacionCompletada;
-
-    [Tooltip("Se dispara repetidamente MIENTRAS Python corre, con la última corrida disponible.")]
     public ProgresoUnityEvent OnProgresoRecibido;
-
-    [Tooltip("Se dispara si Python no se pudo lanzar, terminó con código de salida distinto de 0, o escribió en stderr.")]
     public UnityEvent<string> OnSimulacionError;
 
     private static readonly Dictionary<TipoExperimento, string> MapaExperimentos = new()
@@ -32,8 +26,6 @@ public class ControladorSimulacionVR : MonoBehaviour
         { TipoExperimento.InterferenciaOndas, "interferencia_ondas" }
     };
 
-    // Solo guardamos la última línea recibida: con miles de corridas por segundo,
-    // no queremos procesar cada una, solo mostrar el estado más reciente por frame.
     private volatile string ultimaLineaProgreso = null;
 
     public void DetonarSimulacionGrangier()
@@ -45,7 +37,6 @@ public class ControladorSimulacionVR : MonoBehaviour
     private IEnumerator EjecutarPython()
     {
         string rutaScript = Path.Combine(Application.dataPath, "../Backend/", nombreScriptPython);
-        UnityEngine.Debug.Log($"[DEBUG] Script: {rutaScript}");
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.FileName = rutaPython;
@@ -59,9 +50,6 @@ public class ControladorSimulacionVR : MonoBehaviour
         Process proceso = new Process();
         proceso.StartInfo = startInfo;
 
-        // OJO: estos handlers corren en un hilo secundario de .NET, NO en el hilo
-        // principal de Unity. Por eso aquí solo guardamos el texto; el procesamiento
-        // real (parseo de JSON, actualizar UI) pasa en el loop de abajo.
         proceso.OutputDataReceived += (sender, args) =>
         {
             if (!string.IsNullOrEmpty(args.Data))
@@ -101,10 +89,13 @@ public class ControladorSimulacionVR : MonoBehaviour
             yield return null;
         }
 
-        // OJO: antes solo se revisaba erroresPython (stderr). Un error de validación que
-        // Python maneja "limpiamente" (status:"error" en output.json, sin traceback) no
-        // escribe nada en stderr, pero SÍ termina con código de salida != 0. Sin este chequeo,
-        // ese caso caía en el "else" y la UI creía que la simulación había sido un éxito.
+        string lineaFinal = ultimaLineaProgreso;
+        if (lineaFinal != null)
+        {
+            ultimaLineaProgreso = null;
+            ProcesarLineaProgreso(lineaFinal);
+        }
+
         bool huboError = !string.IsNullOrEmpty(erroresPython) || proceso.ExitCode != 0;
 
         if (huboError)
@@ -132,7 +123,7 @@ public class ControladorSimulacionVR : MonoBehaviour
         }
         catch (System.Exception)
         {
-            return; // línea incompleta o no es JSON (no debería pasar, pero por seguridad)
+            return;
         }
 
         if (datos != null && datos.tipo == "progreso")
@@ -148,17 +139,18 @@ public class ProgresoUnityEvent : UnityEvent<LineaProgreso> { }
 [System.Serializable]
 public class LineaProgreso
 {
-    public string tipo;           // "inicio" | "progreso" | "fin"
+    public string tipo;
     public string experimento;
-    public int num_angulos;       // solo en "inicio"
-    public int total_corridas;    // solo en "inicio"
-    public float angulo_grados;   // solo en "progreso"
-    public int modo_detectores;   // solo en "progreso": 2 o 3
+    public int num_angulos;
+    public int total_corridas;
+    public float angulo_grados;
+    public int modo_detectores;
     public int num_test;
-    public int NG;                // solo válido si modo_detectores == 3
+    public int NG;
     public int NGT;
     public int NGR;
     public int NGTR;
     public float g2;
-    public string status;         // solo en "fin"
+    public bool estadistica_insuficiente;
+    public string status;
 }

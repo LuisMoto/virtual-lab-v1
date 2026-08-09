@@ -4,19 +4,6 @@ using TMPro;
 using System.IO;
 using System.Text;
 
-/// <summary>
-/// Controla el panel flotante inmersivo (Carga -> Terminal en vivo -> Resumen)
-/// para UNA escena de experimento (DosDet o TresDet).
-///
-/// IMPORTANTE — esto NO se auto-conecta como la versión anterior:
-/// ControladorSimulacionVR usa UnityEvents cableados desde el Inspector, no
-/// eventos estáticos de C#. Hay que arrastrar los métodos públicos de abajo
-/// a los eventos del componente ControladorSimulacionVR en la escena:
-///
-///   ControladorSimulacionVR.OnProgresoRecibido     -> ManejarProgreso
-///   ControladorSimulacionVR.OnSimulacionCompletada  -> ManejarFin
-///   ControladorSimulacionVR.OnSimulacionError       -> ManejarError
-/// </summary>
 public class ControladorInterfazSimulacion : MonoBehaviour
 {
     [Header("Panel raíz")]
@@ -38,9 +25,6 @@ public class ControladorInterfazSimulacion : MonoBehaviour
     [Header("Referencia al integrador")]
     public ControladorSimulacionVR integrador;
 
-    [Header("Solo aplica si integrador.experimento == GrangierHwp")]
-    [Tooltip("2 = DosDet (luz natural). 3 = una futura escena de testigo/3 detectores. " +
-             "Ignora cualquier línea de progreso que no sea de este modo.")]
     public int modoDetectorEsperado = 2;
 
     private bool _recibioAlgunaLinea;
@@ -65,19 +49,13 @@ public class ControladorInterfazSimulacion : MonoBehaviour
         textoTerminal.text = "";
         textoResumen.text = "";
 
-        // Nota: el método se llama "DetonarSimulacionGrangier" en ControladorSimulacionVR
-        // aunque también dispara interferencia_ondas — usa el 'experimento' ya asignado
-        // en el Inspector de esa escena, no recibe parámetro.
         integrador.DetonarSimulacionGrangier();
     }
 
-    // Cablear en el Inspector: ControladorSimulacionVR -> OnProgresoRecibido
     public void ManejarProgreso(LineaProgreso p)
     {
         bool esGrangier = integrador.experimento == ControladorSimulacionVR.TipoExperimento.GrangierHwp;
 
-        // simulator.py intercala líneas de modo 2 y modo 3 para el mismo ángulo;
-        // esta escena solo debe reaccionar a las que le corresponden.
         if (esGrangier && p.modo_detectores != modoDetectorEsperado)
             return;
 
@@ -95,12 +73,8 @@ public class ControladorInterfazSimulacion : MonoBehaviour
         AgregarLineaTerminal(FormatearLinea(p));
     }
 
-    // Cablear en el Inspector: ControladorSimulacionVR -> OnSimulacionCompletada
     public void ManejarFin()
     {
-        // interferencia_ondas no emite progreso (es un cálculo instantáneo, sin corridas),
-        // así que aquí nunca se pasó por vistaTerminal — se salta directo de Carga a Resumen,
-        // lo cual es el comportamiento esperado para esa escena, no un bug.
         textoResumen.text = integrador.experimento == ControladorSimulacionVR.TipoExperimento.InterferenciaOndas
             ? ConstruirResumenOndas()
             : ConstruirResumenGrangier();
@@ -108,7 +82,6 @@ public class ControladorInterfazSimulacion : MonoBehaviour
         MostrarSoloVista(vistaResumen);
     }
 
-    // Cablear en el Inspector: ControladorSimulacionVR -> OnSimulacionError
     public void ManejarError(string mensaje)
     {
         if (_recibioAlgunaLinea)
@@ -120,12 +93,12 @@ public class ControladorInterfazSimulacion : MonoBehaviour
 
     private string FormatearLinea(LineaProgreso p)
     {
-        // Modo 2 no trae un NG (testigo) con significado real (Python manda null) —
-        // se omite para no mostrar un engañoso "NG: 0".
-        if (p.modo_detectores == 3)
-            return $"[{_corridasVistas}] ángulo={p.angulo_grados:F1}° NG={p.NG} Nc={p.NGTR} g²={p.g2:F4}";
+        string g2Texto = p.estadistica_insuficiente ? "N/A" : $"{p.g2:F4}";
 
-        return $"[{_corridasVistas}] ángulo={p.angulo_grados:F1}° Nc={p.NGTR} g²={p.g2:F4}";
+        if (p.modo_detectores == 3)
+            return $"[{_corridasVistas}] ángulo={p.angulo_grados:F1}° NG={p.NG} Nc={p.NGTR} g²={g2Texto}";
+
+        return $"[{_corridasVistas}] ángulo={p.angulo_grados:F1}° Nc={p.NGTR} g²={g2Texto}";
     }
 
     private string ConstruirResumenGrangier()
@@ -134,6 +107,7 @@ public class ControladorInterfazSimulacion : MonoBehaviour
             return ConstruirEncabezadoError("No se recibió ninguna corrida durante la simulación.");
 
         string titulo = modoDetectorEsperado == 3 ? "3 DETECTORES (TESTIGO)" : "LUZ NATURAL (2 DETECTORES)";
+        string g2Texto = _ultimoProgreso.estadistica_insuficiente ? "N/A (estadística insuficiente)" : $"{_ultimoProgreso.g2:F4}";
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine($"<b>RESUMEN — {titulo}</b>");
@@ -142,7 +116,7 @@ public class ControladorInterfazSimulacion : MonoBehaviour
         sb.AppendLine($"Última corrida           : #{_ultimoProgreso.num_test}");
         sb.AppendLine($"Ángulo HWP                : {_ultimoProgreso.angulo_grados:F1}°");
         sb.AppendLine($"Coincidencias (Nc)        : {_ultimoProgreso.NGTR}");
-        sb.AppendLine($"g² calculado              : {_ultimoProgreso.g2:F4}");
+        sb.AppendLine($"g² calculado              : {g2Texto}");
         sb.AppendLine("--------------------------------------------------");
         sb.AppendLine("<i>Nota: son los valores de la última corrida recibida en vivo,");
         sb.AppendLine("no del archivo final (output.json no incluye este modo hoy).</i>");
@@ -204,4 +178,19 @@ public class ControladorInterfazSimulacion : MonoBehaviour
     {
         return $"<color=#FF5555><b>ERROR</b></color>\n{mensaje}";
     }
+}
+
+[System.Serializable]
+public class JsonSalidaOndas
+{
+    public string status;
+    public string experimento;
+    public ResultadosOndas resultados;
+}
+[System.Serializable]
+public class ResultadosOndas
+{
+    public float fase_grados;
+    public float intensidad_relativa;
+    public float visibilidad;
 }

@@ -59,7 +59,7 @@ def validar_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
     if angulo_inicio > angulo_fin:
         return False, "angulo_hwp_inicio_grados no puede ser mayor que angulo_hwp_fin_grados.", {}
 
-    num_angulos = int((angulo_fin - angulo_inicio) / angulo_paso) + 1
+    num_angulos = int(round((angulo_fin - angulo_inicio) / angulo_paso)) + 1
     if num_angulos <= 0:
         return False, "El barrido de ángulos no genera ningún punto.", {}
     if num_angulos > MAX_ANGULOS:
@@ -95,12 +95,18 @@ def simular_experimento_fisico(modo: int, num_pulsos: int, rng: random.Random,
         click_r = False
         click_i = False
 
-        if rng.random() < prob_testigo:
-            if rng.random() < detector_efficiency: click_i = True
-            if rng.random() < bs_trans:
-                if rng.random() < detector_efficiency: click_t = True
-            else:
-                if rng.random() < detector_efficiency: click_r = True
+        if modo == 3:
+            if rng.random() < prob_testigo:
+                if rng.random() < detector_efficiency: click_i = True
+                if rng.random() < bs_trans:
+                    if rng.random() < detector_efficiency: click_t = True
+                else:
+                    if rng.random() < detector_efficiency: click_r = True
+        else:
+            if rng.random() < bs_trans and rng.random() < detector_efficiency:
+                click_t = True
+            if rng.random() < (1.0 - bs_trans) and rng.random() < detector_efficiency:
+                click_r = True
 
         if rng.random() < dark_count_rate: click_i = True
         if rng.random() < dark_count_rate: click_t = True
@@ -140,11 +146,12 @@ def _emitir_progreso_corrida(angulo: float, modo: int, num_test: int,
         "num_test": num_test,
         "CoinWin_ns": cfg["coincidencia_ventana_ns"],
         "Tp_us": cfg["duracion_prueba_us"],
-        "NG": corrida["conteo_testigo_Ni"] if modo == 3 else None,
+        "NG": corrida["conteo_testigo_Ni"] if modo == 3 else 0,
         "NGT": corrida["conteo_transmitido_Nt"],
         "NGR": corrida["conteo_reflejado_Nr"],
         "NGTR": corrida["coincidencias_Nc"],
         "g2": corrida["g2_calculado"],
+        "estadistica_insuficiente": corrida["estadistica_insuficiente"],
     })
 
 def ejecutar(params: dict) -> Dict[str, Any]:
@@ -202,21 +209,30 @@ def ejecutar(params: dict) -> Dict[str, Any]:
         return utils.construir_respuesta_error(f"Error en la simulación: {e}",
                                                  experimento=EXPERIMENTO)
 
-    # --- Resultado LIVIANO para Unity: coincide exactamente con las clases C# ---
-    # (JsonSalida / Resultados / PuntoBarrido / Detectores / Corrida en LectorDatosGrangier.cs)
-    # El detalle completo de todos los ángulos/corridas ya vive en el CSV de abajo;
-    # esto es solo el snapshot final que se muestra en los paneles de la Escena 1.
-    primera_corrida = barrido[0]["tres_detectores"]["corridas"][0]
+    ultimo_punto = barrido[-1]
+    ultima_corrida_2d = ultimo_punto["dos_detectores"]["corridas"][-1]
+    ultima_corrida_3d = ultimo_punto["tres_detectores"]["corridas"][-1]
+    
     resultados = {
         "coincidencia_ventana_ns": cfg["coincidencia_ventana_ns"],
         "barrido_hwp": [
             {
-                "angulo_grados": barrido[0]["angulo_grados"],
+                "angulo_grados": ultimo_punto["angulo_grados"],
+                "dos_detectores": {
+                    "corridas": [
+                        {
+                            "coincidencias_Nc": ultima_corrida_2d["coincidencias_Nc"],
+                            "g2_calculado": ultima_corrida_2d["g2_calculado"],
+                            "estadistica_insuficiente": ultima_corrida_2d["estadistica_insuficiente"],
+                        }
+                    ]
+                },
                 "tres_detectores": {
                     "corridas": [
                         {
-                            "coincidencias_Nc": primera_corrida["coincidencias_Nc"],
-                            "g2_calculado": primera_corrida["g2_calculado"],
+                            "coincidencias_Nc": ultima_corrida_3d["coincidencias_Nc"],
+                            "g2_calculado": ultima_corrida_3d["g2_calculado"],
+                            "estadistica_insuficiente": ultima_corrida_3d["estadistica_insuficiente"],
                         }
                     ]
                 },
@@ -229,7 +245,6 @@ def ejecutar(params: dict) -> Dict[str, Any]:
         "config": cfg,
     }
 
-    # --- CSV completo (todos los ángulos, todas las corridas) para análisis externo ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_csv = f"resultados_grangier_hwp_{timestamp}_{semilla}.csv"
     lineas = ["Angulo_grados,Bs_trans_efectivo,Modo_Detectores,NumTest,CoinWin_ns,Tp_us,"
@@ -257,9 +272,6 @@ def ejecutar(params: dict) -> Dict[str, Any]:
     return utils.construir_respuesta_ok(EXPERIMENTO, resultados, meta)
 
 if __name__ == "__main__":
-    # Permite seguir probando este archivo de forma aislada: python simulator.py
-    # Usa la MISMA función ejecutar() que usa main.py, así nunca hay divergencia
-    # entre lo que ves aquí y lo que Unity recibe en un flujo real.
     datos_entrada, error_lectura = utils.leer_input_con_reintentos("input.json")
     if error_lectura:
         resultado = utils.construir_respuesta_error(error_lectura, experimento=EXPERIMENTO)
