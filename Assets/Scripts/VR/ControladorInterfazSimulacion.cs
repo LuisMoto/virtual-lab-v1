@@ -119,7 +119,7 @@ public class ControladorInterfazSimulacion : MonoBehaviour
         sb.AppendLine($"g² calculado              : {g2Texto}");
         sb.AppendLine("--------------------------------------------------");
         sb.AppendLine("<i>Nota: son los valores de la última corrida recibida en vivo,");
-        sb.AppendLine("no del archivo final (output.json no incluye este modo hoy).</i>");
+        sb.AppendLine("no del último ángulo consolidado en el archivo final.</i>");
         return sb.ToString();
     }
 

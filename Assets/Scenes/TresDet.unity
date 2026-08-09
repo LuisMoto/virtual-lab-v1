@@ -2457,7 +2457,7 @@ MonoBehaviour:
   vistaResumen: {fileID: 1365335669}
   textoResumen: {fileID: 2064274708}
   integrador: {fileID: 1105349205}
-  modoDetectorEsperado: 2
+  modoDetectorEsperado: 3
 --- !u!114 &1105349205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2472,7 +2472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rutaPython: python
   nombreScriptPython: main.py
-  experimento: 1
+  experimento: 0
   OnSimulacionCompletada:
     m_PersistentCalls:
       m_Calls:
@@ -2532,6 +2532,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   panelCoincidencias: {fileID: 0}
   panelG2: {fileID: 0}
+  modoEsperado: 3
 --- !u!4 &1105349207
 Transform:
   m_ObjectHideFlags: 0
