@@ -2637,8 +2637,8 @@ PrefabInstance:
         type: 3}
       propertyPath: dialogues.Array.data[0]
       value: "\xA1Hola! \xA1Qu\xE9 gusto verte! Bienvenido al simulador en realidad
-        virtual del experimento de Grangier. \n\xA1Presiona A en la PC para cambiar
-        de di\xE1logo!"
+        virtual del experimento de Grangier. \n\xA1Apunta a la caja de dialogo con
+        tu joystick derecho y presiona el gatillo para saltar a la siguiente ventana!"
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
@@ -2657,21 +2657,21 @@ PrefabInstance:
         type: 3}
       propertyPath: dialogues.Array.data[3]
       value: "Podr\xE1s visualizar las funciones de correlaci\xF3n de segundo orden
-        $g^{(2)}_{2D}$ y $g^{(2)}_{3D}$, que te permitir\xE1n distinguir si la luz
-        se comporta como onda o como part\xEDcula."
+        , g\u207D\xB2\u207E\u2082D y g\u207D\xB2\u207E\u2083D  que te permitir\xE1n
+        distinguir si la luz se comporta como onda o como part\xEDcula."
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
       propertyPath: dialogues.Array.data[4]
       value: "Recuerda que diremos que una series es: Correlacionada: para cualquier
-        evento en el tiempo $t$, existe otro evento en un tiempo menor a $t+\\tau_0$
+        evento en el tiempo t, existe otro evento en un tiempo menor a t+ \u03C4\u2080
         (hay predictibilidad si se detecta un fot\xF3n, existe otro asociado a \xE9l)."
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
       propertyPath: dialogues.Array.data[5]
-      value: "Mientras que una Serie anticorrelacionada: si ocurre un evento en $t$,
-        no existe ning\xFAn otro dentro del intervalo $t+\\tau_0$."
+      value: "Mientras que una Serie anticorrelacionada: si ocurre un evento en t,
+        no existe ning\xFAn otro dentro del intervalo t+ \u03C4\u2080."
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
@@ -2691,7 +2691,7 @@ PrefabInstance:
         type: 3}
       propertyPath: dialogues.Array.data[8]
       value: "...divididos en haz se\xF1al (va al divisor de haz 50:50, con detectores
-        $D_T$ y $D_R$) y haz testigo (va directo a su propio detector)."
+        D\u209C y D\u1D63) y haz testigo (va directo a su propio detector)."
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
@@ -2703,14 +2703,14 @@ PrefabInstance:
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
       propertyPath: dialogues.Array.data[10]
-      value: "Observa que en la anticorrelaci\xF3n, el fot\xF3n llega a $D_T$ o a
-        $D_R$, nunca a ambos y firma el comportamiento de part\xEDcula."
+      value: "Observa que en la anticorrelaci\xF3n, el fot\xF3n llega a D\u209C o
+        a D\u1D63, nunca a ambos y firma el comportamiento de part\xEDcula."
       objectReference: {fileID: 0}
     - target: {fileID: 4083818003664544882, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
       propertyPath: dialogues.Array.data[11]
       value: "Tambi\xE9n nota que el fot\xF3n testigo se produce casi simult\xE1neamente
-        al fot\xF3n se\xF1al (diferencia $\\approx 120$ ns) y funciona como \"heraldo\",
+        al fot\xF3n se\xF1al (diferencia \u2248 120 ns) y funciona como \"heraldo\",
         lo que permite establecer una triple correlaci\xF3n y localizar con certeza
         al fot\xF3n transmitido/reflejado."
       objectReference: {fileID: 0}
@@ -2755,7 +2755,7 @@ PrefabInstance:
         type: 3}
       propertyPath: dialogues.Array.data[18]
       value: " Y muy importante con el gatillo de de tu mango de tu joystick derecho
-        deber\xE1s tocar el objeto rosa que est\xE1 junto a la mesa. "
+        deber\xE1s tocar el boton que est\xE1 junto a la mesa. "
       objectReference: {fileID: 0}
     - target: {fileID: 4766548093815645374, guid: 02b5b195a1b1656449d55689f845e30f,
         type: 3}
