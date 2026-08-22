@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Grangier.sln"
+    "dotnet.defaultSolution": "virtual-lab-v1.sln"
 }
