@@ -73,3 +73,7 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Backend run artifacts (Python simulator outputs/cache)
+Backend/__pycache__/
+Backend/resultados_grangier_hwp_*.csv
