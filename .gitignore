@@ -74,6 +74,46 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
-# Backend run artifacts (Python simulator outputs/cache)
+# ---------------------------------------------------------------------------
+# Python / Backend (simulador Grangier)
+# ---------------------------------------------------------------------------
 Backend/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Salidas generadas por cada corrida del simulador (no versionar resultados)
+Backend/output.json
 Backend/resultados_grangier_hwp_*.csv
+Backend/*.csv
+
+# ---------------------------------------------------------------------------
+# IDE / Editor
+# ---------------------------------------------------------------------------
+# JetBrains (Rider, PyCharm, IntelliJ)
+.idea/
+*.iml
+
+# VS Code: se deja .vscode/ trackeado a propósito porque el repo ya versiona
+# settings.json/launch.json/extensions.json como configuración compartida del
+# equipo. Si prefieres dejar de versionarlo, descomenta la línea siguiente:
+# .vscode/
+
+# Archivos de swap/backup de editores comunes
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
