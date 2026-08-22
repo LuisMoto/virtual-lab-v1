@@ -1,8 +1,8 @@
 {
-    "configuracion": {
-        "parametros": {
-            "num_pulsos": 1000,
-            "num_corridas": 1
+    "configuration": {
+        "parameters": {
+            "num_pulses": 1000,
+            "num_runs": 1
         }
     }
 }

@@ -1934,8 +1934,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616076}
-        m_TargetAssemblyTypeName: ControladorSimulacionVR, Assembly-CSharp
-        m_MethodName: DetonarSimulacionGrangier
+        m_TargetAssemblyTypeName: SimulationControllerVR, Assembly-CSharp
+        m_MethodName: RunGrangierSimulation
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3096,8 +3096,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarFin
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleCompletion
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3111,8 +3111,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarProgreso
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleProgress
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3126,8 +3126,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarError
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleError
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

@@ -8,9 +8,9 @@ from typing import Any, Dict, Optional, Tuple
 
 BACKOFF_BASE_S = 0.05
 
-def escribir_json_atomico(path: str, data: dict) -> None:
-    directorio = os.path.dirname(os.path.abspath(path)) or "."
-    fd, tmp_path = tempfile.mkstemp(dir=directorio, prefix=".tmp_", suffix=".json")
+def write_json_atomic(path: str, data: dict) -> None:
+    directory = os.path.dirname(os.path.abspath(path)) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
@@ -25,83 +25,83 @@ def escribir_json_atomico(path: str, data: dict) -> None:
                 pass
         raise
 
-def intentar_escribir_texto(path: str, contenido: str) -> Optional[str]:
+def try_write_text(path: str, content: str) -> Optional[str]:
     try:
         with open(path, "w", encoding="utf-8", newline="") as f:
-            f.write(contenido)
+            f.write(content)
         return None
     except Exception as e:
         return str(e)
 
-def construir_respuesta_ok(experimento: str, resultados: Dict[str, Any],
-                            meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def build_ok_response(experiment: str, results: Dict[str, Any],
+                       meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return {
         "status": "ok",
-        "experimento": experimento,
-        "resultados": resultados,
+        "experiment": experiment,
+        "results": results,
         "meta": meta or {},
     }
 
-def construir_respuesta_error(mensaje: str, detalles: Any = None,
-                               experimento: Optional[str] = None) -> Dict[str, Any]:
+def build_error_response(message: str, details: Any = None,
+                          experiment: Optional[str] = None) -> Dict[str, Any]:
     return {
         "status": "error",
-        "experimento": experimento,
-        "mensaje": mensaje,
-        "detalles": detalles or {},
+        "experiment": experiment,
+        "message": message,
+        "details": details or {},
         "timestamp": datetime.datetime.now().isoformat(),
     }
 
-def leer_input_con_reintentos(path: str, intentos: int = 3) -> Tuple[Optional[dict], Optional[str]]:
+def read_input_with_retries(path: str, attempts: int = 3) -> Tuple[Optional[dict], Optional[str]]:
     if not os.path.exists(path):
         return None, None
 
-    ultimo_error = "desconocido"
-    for intento in range(intentos):
+    last_error = "desconocido"
+    for attempt in range(attempts):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f), None
         except FileNotFoundError:
-            ultimo_error = f"No se encontró el archivo '{path}'."
+            last_error = f"No se encontró el archivo '{path}'."
         except json.JSONDecodeError as e:
-            ultimo_error = f"'{path}' contiene JSON inválido: {e}"
+            last_error = f"'{path}' contiene JSON inválido: {e}"
         except Exception as e:
-            ultimo_error = str(e)
+            last_error = str(e)
 
-        if intento < intentos - 1:
-            time.sleep(BACKOFF_BASE_S * (3 ** intento))
+        if attempt < attempts - 1:
+            time.sleep(BACKOFF_BASE_S * (3 ** attempt))
 
-    return None, ultimo_error
+    return None, last_error
 
-def extraer_parametros(datos_entrada: Optional[dict]) -> dict:
-    if not datos_entrada:
+def extract_parameters(input_data: Optional[dict]) -> dict:
+    if not input_data:
         return {}
     try:
-        return datos_entrada.get("configuracion", {}).get("parametros", {}) or {}
+        return input_data.get("configuration", {}).get("parameters", {}) or {}
     except AttributeError:
         return {}
 
-def validar_entero(valor: Any, nombre: str, minimo: Optional[int] = None,
-                    maximo: Optional[int] = None) -> Tuple[bool, str, Optional[int]]:
+def validate_integer(value: Any, name: str, minimum: Optional[int] = None,
+                      maximum: Optional[int] = None) -> Tuple[bool, str, Optional[int]]:
     try:
-        v = int(valor)
+        v = int(value)
     except (TypeError, ValueError):
-        return False, f"{nombre} debe ser un entero.", None
-    if minimo is not None and v < minimo:
-        return False, f"{nombre} debe ser >= {minimo} (recibido {v}).", None
-    if maximo is not None and v > maximo:
-        return False, f"{nombre} excede el máximo permitido ({maximo}, recibido {v}).", None
+        return False, f"{name} debe ser un entero.", None
+    if minimum is not None and v < minimum:
+        return False, f"{name} debe ser >= {minimum} (recibido {v}).", None
+    if maximum is not None and v > maximum:
+        return False, f"{name} excede el máximo permitido ({maximum}, recibido {v}).", None
     return True, "", v
 
-def validar_flotante_rango(valor: Any, nombre: str, minimo: float = 0.0,
-                            maximo: float = 1.0) -> Tuple[bool, str, Optional[float]]:
+def validate_float_range(value: Any, name: str, minimum: float = 0.0,
+                          maximum: float = 1.0) -> Tuple[bool, str, Optional[float]]:
     try:
-        v = float(valor)
+        v = float(value)
     except (TypeError, ValueError):
-        return False, f"{nombre} debe ser numérico.", None
-    if not (minimo <= v <= maximo):
-        return False, f"{nombre} debe estar en [{minimo}, {maximo}] (recibido {v}).", None
+        return False, f"{name} debe ser numérico.", None
+    if not (minimum <= v <= maximum):
+        return False, f"{name} debe estar en [{minimum}, {maximum}] (recibido {v}).", None
     return True, "", v
 
-def emitir_progreso(payload: Dict[str, Any]) -> None:
+def emit_progress(payload: Dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False), flush=True)

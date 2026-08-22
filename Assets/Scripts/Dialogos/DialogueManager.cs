@@ -1,29 +1,34 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 using TMPro;
-using UnityEngine.SceneManagement; // Librería necesaria para cambiar de escenas
+using UnityEngine.SceneManagement; // Required to switch between scenes
 
 public class DialogueManager : MonoBehaviour
 {
-    [Header("Textos")]
+    [Header("Text")]
     public TMP_Text dialogueText;
     [TextArea(3, 10)]
     public string[] dialogues;
 
-    [Header("Configuración de Velocidad")]
+    [Header("Speed Settings")]
     public float normalSpeed = 0.04f;
 
-    [Header("Interacción VR (apuntar + gatillo)")]
-    [Tooltip("Botón invisible que cubre el DialogueBox completo. Apuntar + gatillo avanza el diálogo.")]
-    public Button botonAvanzar;
+    [Header("VR Interaction (point + trigger)")]
+    [Tooltip("Invisible button covering the whole DialogueBox. Point + trigger advances the dialogue.")]
+    [FormerlySerializedAs("botonAvanzar")]
+    public Button advanceButton;
 
-    [Header("Sistema de Decisiones")]
-    public GameObject panelDecisiones; // El contenedor de las opciones
-    [Tooltip("Botón de la opción '2 Detectores' (ya tiene el componente Button)")]
-    public Button botonOpcion1;
-    [Tooltip("Botón de la opción '3 Detectores' (ya tiene el componente Button)")]
-    public Button botonOpcion2;
+    [Header("Choice System")]
+    [FormerlySerializedAs("panelDecisiones")]
+    public GameObject choicesPanel; // Container for the options
+    [Tooltip("Button for the '2 Detectors' option (already has the Button component)")]
+    [FormerlySerializedAs("botonOpcion1")]
+    public Button option1Button;
+    [Tooltip("Button for the '3 Detectors' option (already has the Button component)")]
+    [FormerlySerializedAs("botonOpcion2")]
+    public Button option2Button;
 
     private int currentDialogue = 0;
     private bool isTyping = false;
@@ -32,15 +37,15 @@ public class DialogueManager : MonoBehaviour
 
     void Start()
     {
-        // Aseguramos que el panel empiece apagado
-        if (panelDecisiones != null) panelDecisiones.SetActive(false);
+        // Make sure the panel starts hidden
+        if (choicesPanel != null) choicesPanel.SetActive(false);
 
-        // Todo el flujo se resuelve con el Ray Interactor de los controles:
-        // apuntar + gatillo dispara el onClick del botón señalado.
-        // No hay dependencia de teclado en ningún punto del script.
-        botonAvanzar.onClick.AddListener(OnAvanzar);
-        botonOpcion1.onClick.AddListener(() => SeleccionarOpcion(0));
-        botonOpcion2.onClick.AddListener(() => SeleccionarOpcion(1));
+        // The whole flow is driven by the controllers' Ray Interactor:
+        // point + trigger fires the onClick of the targeted button.
+        // There is no keyboard dependency anywhere in the script.
+        advanceButton.onClick.AddListener(OnAdvance);
+        option1Button.onClick.AddListener(() => SelectOption(0));
+        option2Button.onClick.AddListener(() => SelectOption(1));
 
         dialogueText.text = "";
         if (dialogues.Length > 0)
@@ -54,10 +59,10 @@ public class DialogueManager : MonoBehaviour
         typingCoroutine = StartCoroutine(TypeLine(dialogues[currentDialogue]));
     }
 
-    // Llamado por botonAvanzar.onClick (equivalente al KeyCode.A anterior)
-    void OnAvanzar()
+    // Called by advanceButton.onClick (equivalent to the former KeyCode.A)
+    void OnAdvance()
     {
-        if (isChoosing) return; // mientras se elige, este botón queda tapado por el panel de todas formas
+        if (isChoosing) return; // while choosing, this button is covered by the panel anyway
 
         if (isTyping)
         {
@@ -73,7 +78,7 @@ public class DialogueManager : MonoBehaviour
     {
         currentDialogue++;
 
-        // Si ya no hay más diálogos, activamos la pantalla de decisión
+        // If there are no more dialogues, show the choice screen
         if (currentDialogue >= dialogues.Length)
         {
             ShowChoices();
@@ -105,23 +110,23 @@ public class DialogueManager : MonoBehaviour
     }
 
     // ---------------------------------------------------------
-    // SISTEMA DE DECISIONES
+    // CHOICE SYSTEM
     // ---------------------------------------------------------
 
     void ShowChoices()
     {
         isChoosing = true;
-        panelDecisiones.SetActive(true); // Aparece el menú
+        choicesPanel.SetActive(true); // The menu appears
 
-        // El resaltado de la opción señalada (antes colorSeleccionado/colorNormal
-        // + navegación con flechas) ahora lo maneja el propio componente Button:
-        // configura su "Highlighted Color" en amarillo desde el Inspector.
-        // Al apuntar con el control, Unity lo tiñe solo — sin código extra.
+        // Highlighting the targeted option (formerly selectedColor/normalColor
+        // + arrow-key navigation) is now handled by the Button component itself:
+        // set its "Highlighted Color" to yellow from the Inspector.
+        // When pointing with the controller, Unity tints it automatically, no extra code.
     }
 
-    void SeleccionarOpcion(int opcion)
+    void SelectOption(int option)
     {
-        if (opcion == 0)
+        if (option == 0)
         {
             SceneManager.LoadScene("DosDet");
         }

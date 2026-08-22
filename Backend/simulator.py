@@ -7,96 +7,96 @@ from typing import Any, Dict, List, Tuple
 import utils
 
 
-MAX_NUM_PULSOS = 2_000_000
-MAX_CORRIDAS = 200
-MAX_ANGULOS = 360
-MAX_OPERACIONES_TOTALES = 100_000_000
+MAX_NUM_PULSES = 2_000_000
+MAX_RUNS = 200
+MAX_ANGLES = 360
+MAX_TOTAL_OPERATIONS = 100_000_000
 
-EXPERIMENTO = "grangier_hwp"
+EXPERIMENT = "grangier_hwp"
 
-def transmitancia_hwp(angulo_grados: float, offset_grados: float = 0.0) -> float:
-    theta = math.radians(angulo_grados + offset_grados)
+def hwp_transmittance(angle_deg: float, offset_deg: float = 0.0) -> float:
+    theta = math.radians(angle_deg + offset_deg)
     return math.cos(2.0 * theta) ** 2
 
-def generar_angulos(inicio: float, fin: float, paso: float) -> List[float]:
-    angulos = []
-    actual = inicio
-    while actual <= fin + 1e-9:
-        angulos.append(round(actual, 6))
-        actual += paso
-    return angulos
+def generate_angles(start: float, end: float, step: float) -> List[float]:
+    angles = []
+    current = start
+    while current <= end + 1e-9:
+        angles.append(round(current, 6))
+        current += step
+    return angles
 
-def validar_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
-    ok, msg, num_pulsos = utils.validar_entero(params.get("num_pulsos", 2000),
-                                                "num_pulsos", minimo=1, maximo=MAX_NUM_PULSOS)
+def validate_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
+    ok, msg, num_pulses = utils.validate_integer(params.get("num_pulses", 2000),
+                                                 "num_pulses", minimum=1, maximum=MAX_NUM_PULSES)
     if not ok:
         return False, msg, {}
-    ok, msg, num_corridas = utils.validar_entero(params.get("num_corridas", 5),
-                                                  "num_corridas", minimo=1, maximo=MAX_CORRIDAS)
+    ok, msg, num_runs = utils.validate_integer(params.get("num_runs", 5),
+                                               "num_runs", minimum=1, maximum=MAX_RUNS)
     if not ok:
         return False, msg, {}
 
-    valores = {"num_pulsos": num_pulsos, "num_corridas": num_corridas}
-    for nombre, default in (("prob_testigo", 0.25), ("dark_count_rate", 0.008),
-                             ("detector_efficiency", 0.85)):
-        ok, msg, v = utils.validar_flotante_rango(params.get(nombre, default), nombre)
+    values = {"num_pulses": num_pulses, "num_runs": num_runs}
+    for name, default in (("witness_prob", 0.25), ("dark_count_rate", 0.008),
+                          ("detector_efficiency", 0.85)):
+        ok, msg, v = utils.validate_float_range(params.get(name, default), name)
         if not ok:
             return False, msg, {}
-        valores[nombre] = v
+        values[name] = v
 
     try:
-        angulo_inicio = float(params.get("angulo_hwp_inicio_grados", 0.0))
-        angulo_fin = float(params.get("angulo_hwp_fin_grados", 180.0))
-        angulo_paso = float(params.get("angulo_hwp_paso_grados", 1.0))
-        angulo_offset = float(params.get("angulo_hwp_offset_grados", 0.0))
-        coincidencia_ventana_ns = float(params.get("coincidencia_ventana_ns", 5.0))
-        duracion_prueba_us = float(params.get("duracion_prueba_us", 500000.0))
+        start_angle = float(params.get("hwp_start_angle_deg", 0.0))
+        end_angle = float(params.get("hwp_end_angle_deg", 180.0))
+        step_angle = float(params.get("hwp_step_angle_deg", 1.0))
+        offset_angle = float(params.get("hwp_offset_angle_deg", 0.0))
+        coincidence_window_ns = float(params.get("coincidence_window_ns", 5.0))
+        test_duration_us = float(params.get("test_duration_us", 500000.0))
     except (TypeError, ValueError):
         return False, "Uno o más parámetros angulares/temporales tienen un tipo inválido.", {}
 
-    if angulo_paso <= 0:
-        return False, "angulo_hwp_paso_grados debe ser > 0.", {}
-    if angulo_inicio > angulo_fin:
-        return False, "angulo_hwp_inicio_grados no puede ser mayor que angulo_hwp_fin_grados.", {}
+    if step_angle <= 0:
+        return False, "hwp_step_angle_deg debe ser > 0.", {}
+    if start_angle > end_angle:
+        return False, "hwp_start_angle_deg no puede ser mayor que hwp_end_angle_deg.", {}
 
-    num_angulos = int(round((angulo_fin - angulo_inicio) / angulo_paso)) + 1
-    if num_angulos <= 0:
+    num_angles = int(round((end_angle - start_angle) / step_angle)) + 1
+    if num_angles <= 0:
         return False, "El barrido de ángulos no genera ningún punto.", {}
-    if num_angulos > MAX_ANGULOS:
-        return False, f"El barrido genera {num_angulos} ángulos, excede el máximo permitido ({MAX_ANGULOS}).", {}
+    if num_angles > MAX_ANGLES:
+        return False, f"El barrido genera {num_angles} ángulos, excede el máximo permitido ({MAX_ANGLES}).", {}
 
-    total_operaciones = num_pulsos * num_corridas * num_angulos * 2
-    if total_operaciones > MAX_OPERACIONES_TOTALES:
-        return False, (f"La combinación de parámetros implica {total_operaciones} operaciones, "
-                        f"excede el máximo permitido ({MAX_OPERACIONES_TOTALES}). Reduce num_pulsos, "
-                        f"num_corridas o el rango/paso de ángulos."), {}
+    total_operations = num_pulses * num_runs * num_angles * 2
+    if total_operations > MAX_TOTAL_OPERATIONS:
+        return False, (f"La combinación de parámetros implica {total_operations} operaciones, "
+                       f"excede el máximo permitido ({MAX_TOTAL_OPERATIONS}). Reduce num_pulses, "
+                       f"num_runs o el rango/paso de ángulos."), {}
 
-    valores.update({
-        "angulo_hwp_inicio_grados": angulo_inicio,
-        "angulo_hwp_fin_grados": angulo_fin,
-        "angulo_hwp_paso_grados": angulo_paso,
-        "angulo_hwp_offset_grados": angulo_offset,
-        "coincidencia_ventana_ns": coincidencia_ventana_ns,
-        "duracion_prueba_us": duracion_prueba_us,
-        "num_angulos": num_angulos,
+    values.update({
+        "hwp_start_angle_deg": start_angle,
+        "hwp_end_angle_deg": end_angle,
+        "hwp_step_angle_deg": step_angle,
+        "hwp_offset_angle_deg": offset_angle,
+        "coincidence_window_ns": coincidence_window_ns,
+        "test_duration_us": test_duration_us,
+        "num_angles": num_angles,
     })
-    return True, "", valores
+    return True, "", values
 
-def simular_experimento_fisico(modo: int, num_pulsos: int, rng: random.Random,
-                               prob_testigo: float, bs_trans: float,
-                               dark_count_rate: float, detector_efficiency: float) -> dict:
+def simulate_physical_experiment(mode: int, num_pulses: int, rng: random.Random,
+                                 witness_prob: float, bs_trans: float,
+                                 dark_count_rate: float, detector_efficiency: float) -> dict:
     Nt = 0
     Nr = 0
     Nc = 0
     Ni = 0
 
-    for _ in range(num_pulsos):
+    for _ in range(num_pulses):
         click_t = False
         click_r = False
         click_i = False
 
-        if modo == 3:
-            if rng.random() < prob_testigo:
+        if mode == 3:
+            if rng.random() < witness_prob:
                 if rng.random() < detector_efficiency: click_i = True
                 if rng.random() < bs_trans:
                     if rng.random() < detector_efficiency: click_t = True
@@ -118,121 +118,121 @@ def simular_experimento_fisico(modo: int, num_pulsos: int, rng: random.Random,
         if click_t and click_r: Nc += 1
 
     g2 = 0.0
-    insuficiente = True
+    insufficient = True
     if Nt > 0 and Nr > 0:
-        if modo == 3 and Ni > 0:
+        if mode == 3 and Ni > 0:
             g2 = (Nc * Ni) / (Nt * Nr)
-            insuficiente = False
-        elif modo == 2:
-            g2 = (Nc * num_pulsos) / (Nt * Nr)
-            insuficiente = False
+            insufficient = False
+        elif mode == 2:
+            g2 = (Nc * num_pulses) / (Nt * Nr)
+            insufficient = False
 
     return {
-        "conteo_testigo_Ni": Ni,
-        "conteo_transmitido_Nt": Nt,
-        "conteo_reflejado_Nr": Nr,
-        "coincidencias_Nc": Nc,
-        "g2_calculado": round(g2, 6),
-        "estadistica_insuficiente": insuficiente
+        "witness_count_Ni": Ni,
+        "transmitted_count_Nt": Nt,
+        "reflected_count_Nr": Nr,
+        "coincidences_Nc": Nc,
+        "g2_calculated": round(g2, 6),
+        "insufficient_statistics": insufficient
     }
 
-def _emitir_progreso_corrida(angulo: float, modo: int, num_test: int,
-                              corrida: Dict[str, Any], cfg: Dict[str, Any]) -> None:
-    utils.emitir_progreso({
-        "tipo": "progreso",
-        "experimento": EXPERIMENTO,
-        "angulo_grados": angulo,
-        "modo_detectores": modo,
+def _emit_run_progress(angle: float, mode: int, num_test: int,
+                       run: Dict[str, Any], cfg: Dict[str, Any]) -> None:
+    utils.emit_progress({
+        "type": "progress",
+        "experiment": EXPERIMENT,
+        "angle_deg": angle,
+        "detector_mode": mode,
         "num_test": num_test,
-        "CoinWin_ns": cfg["coincidencia_ventana_ns"],
-        "Tp_us": cfg["duracion_prueba_us"],
-        "NG": corrida["conteo_testigo_Ni"] if modo == 3 else 0,
-        "NGT": corrida["conteo_transmitido_Nt"],
-        "NGR": corrida["conteo_reflejado_Nr"],
-        "NGTR": corrida["coincidencias_Nc"],
-        "g2": corrida["g2_calculado"],
-        "estadistica_insuficiente": corrida["estadistica_insuficiente"],
+        "CoinWin_ns": cfg["coincidence_window_ns"],
+        "Tp_us": cfg["test_duration_us"],
+        "NG": run["witness_count_Ni"] if mode == 3 else 0,
+        "NGT": run["transmitted_count_Nt"],
+        "NGR": run["reflected_count_Nr"],
+        "NGTR": run["coincidences_Nc"],
+        "g2": run["g2_calculated"],
+        "insufficient_statistics": run["insufficient_statistics"],
     })
 
-def ejecutar(params: dict) -> Dict[str, Any]:
-    inicio = time.time()
+def run(params: dict) -> Dict[str, Any]:
+    start_time = time.time()
 
-    ok, mensaje, cfg = validar_params(params)
+    ok, message, cfg = validate_params(params)
     if not ok:
-        return utils.construir_respuesta_error(mensaje, {"params_recibidos": params},
-                                                 experimento=EXPERIMENTO)
+        return utils.build_error_response(message, {"received_params": params},
+                                          experiment=EXPERIMENT)
 
-    semilla = params.get("seed")
-    semilla = int(semilla) if semilla is not None else time.time_ns()
-    rng = random.Random(semilla % (2**63))
+    seed = params.get("seed")
+    seed = int(seed) if seed is not None else time.time_ns()
+    rng = random.Random(seed % (2**63))
 
-    angulos = generar_angulos(cfg["angulo_hwp_inicio_grados"], cfg["angulo_hwp_fin_grados"],
-                               cfg["angulo_hwp_paso_grados"])
-    total_corridas = len(angulos) * cfg["num_corridas"] * 2
+    angles = generate_angles(cfg["hwp_start_angle_deg"], cfg["hwp_end_angle_deg"],
+                             cfg["hwp_step_angle_deg"])
+    total_runs = len(angles) * cfg["num_runs"] * 2
 
-    utils.emitir_progreso({
-        "tipo": "inicio", "experimento": EXPERIMENTO,
-        "num_angulos": len(angulos), "total_corridas": total_corridas,
+    utils.emit_progress({
+        "type": "start", "experiment": EXPERIMENT,
+        "num_angles": len(angles), "total_runs": total_runs,
     })
 
-    barrido = []
+    sweep = []
     try:
-        for angulo in angulos:
-            bs_trans_efectivo = transmitancia_hwp(angulo, cfg["angulo_hwp_offset_grados"])
+        for angle in angles:
+            effective_bs_trans = hwp_transmittance(angle, cfg["hwp_offset_angle_deg"])
 
-            corridas_2d = []
-            for i in range(cfg["num_corridas"]):
-                c = simular_experimento_fisico(
-                    2, cfg["num_pulsos"], rng, prob_testigo=cfg["prob_testigo"],
-                    bs_trans=bs_trans_efectivo, dark_count_rate=cfg["dark_count_rate"],
+            runs_2d = []
+            for i in range(cfg["num_runs"]):
+                c = simulate_physical_experiment(
+                    2, cfg["num_pulses"], rng, witness_prob=cfg["witness_prob"],
+                    bs_trans=effective_bs_trans, dark_count_rate=cfg["dark_count_rate"],
                     detector_efficiency=cfg["detector_efficiency"])
-                corridas_2d.append(c)
-                _emitir_progreso_corrida(angulo, 2, i + 1, c, cfg)
+                runs_2d.append(c)
+                _emit_run_progress(angle, 2, i + 1, c, cfg)
 
-            corridas_3d = []
-            for i in range(cfg["num_corridas"]):
-                c = simular_experimento_fisico(
-                    3, cfg["num_pulsos"], rng, prob_testigo=cfg["prob_testigo"],
-                    bs_trans=bs_trans_efectivo, dark_count_rate=cfg["dark_count_rate"],
+            runs_3d = []
+            for i in range(cfg["num_runs"]):
+                c = simulate_physical_experiment(
+                    3, cfg["num_pulses"], rng, witness_prob=cfg["witness_prob"],
+                    bs_trans=effective_bs_trans, dark_count_rate=cfg["dark_count_rate"],
                     detector_efficiency=cfg["detector_efficiency"])
-                corridas_3d.append(c)
-                _emitir_progreso_corrida(angulo, 3, i + 1, c, cfg)
+                runs_3d.append(c)
+                _emit_run_progress(angle, 3, i + 1, c, cfg)
 
-            barrido.append({
-                "angulo_grados": angulo,
-                "bs_trans_efectivo": round(bs_trans_efectivo, 6),
-                "dos_detectores": {"corridas": corridas_2d},
-                "tres_detectores": {"corridas": corridas_3d},
+            sweep.append({
+                "angle_deg": angle,
+                "effective_bs_trans": round(effective_bs_trans, 6),
+                "two_detectors": {"runs": runs_2d},
+                "three_detectors": {"runs": runs_3d},
             })
     except ValueError as e:
-        utils.emitir_progreso({"tipo": "fin", "experimento": EXPERIMENTO, "status": "error"})
-        return utils.construir_respuesta_error(f"Error en la simulación: {e}",
-                                                 experimento=EXPERIMENTO)
+        utils.emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "error"})
+        return utils.build_error_response(f"Error en la simulación: {e}",
+                                          experiment=EXPERIMENT)
 
-    ultimo_punto = barrido[-1]
-    ultima_corrida_2d = ultimo_punto["dos_detectores"]["corridas"][-1]
-    ultima_corrida_3d = ultimo_punto["tres_detectores"]["corridas"][-1]
-    
-    resultados = {
-        "coincidencia_ventana_ns": cfg["coincidencia_ventana_ns"],
-        "barrido_hwp": [
+    last_point = sweep[-1]
+    last_run_2d = last_point["two_detectors"]["runs"][-1]
+    last_run_3d = last_point["three_detectors"]["runs"][-1]
+
+    results = {
+        "coincidence_window_ns": cfg["coincidence_window_ns"],
+        "hwp_sweep": [
             {
-                "angulo_grados": ultimo_punto["angulo_grados"],
-                "dos_detectores": {
-                    "corridas": [
+                "angle_deg": last_point["angle_deg"],
+                "two_detectors": {
+                    "runs": [
                         {
-                            "coincidencias_Nc": ultima_corrida_2d["coincidencias_Nc"],
-                            "g2_calculado": ultima_corrida_2d["g2_calculado"],
-                            "estadistica_insuficiente": ultima_corrida_2d["estadistica_insuficiente"],
+                            "coincidences_Nc": last_run_2d["coincidences_Nc"],
+                            "g2_calculated": last_run_2d["g2_calculated"],
+                            "insufficient_statistics": last_run_2d["insufficient_statistics"],
                         }
                     ]
                 },
-                "tres_detectores": {
-                    "corridas": [
+                "three_detectors": {
+                    "runs": [
                         {
-                            "coincidencias_Nc": ultima_corrida_3d["coincidencias_Nc"],
-                            "g2_calculado": ultima_corrida_3d["g2_calculado"],
-                            "estadistica_insuficiente": ultima_corrida_3d["estadistica_insuficiente"],
+                            "coincidences_Nc": last_run_3d["coincidences_Nc"],
+                            "g2_calculated": last_run_3d["g2_calculated"],
+                            "insufficient_statistics": last_run_3d["insufficient_statistics"],
                         }
                     ]
                 },
@@ -240,43 +240,43 @@ def ejecutar(params: dict) -> Dict[str, Any]:
         ],
     }
     meta = {
-        "tiempo_ejecucion_s": round(time.time() - inicio, 3),
-        "semilla": semilla,
+        "execution_time_s": round(time.time() - start_time, 3),
+        "seed": seed,
         "config": cfg,
     }
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_csv = f"resultados_grangier_hwp_{timestamp}_{semilla}.csv"
-    lineas = ["Angulo_grados,Bs_trans_efectivo,Modo_Detectores,NumTest,CoinWin_ns,Tp_us,"
-              "NG_testigo,NGT_transmitido,NGR_reflejado,NGTR_coincidencia_triple,"
-              "g2_calculado,estadistica_insuficiente"]
-    for punto in barrido:
-        for i, c in enumerate(punto["dos_detectores"]["corridas"], 1):
-            lineas.append(f"{punto['angulo_grados']},{punto['bs_trans_efectivo']},2,{i},"
-                           f"{cfg['coincidencia_ventana_ns']},{cfg['duracion_prueba_us']},"
-                           f",{c['conteo_transmitido_Nt']},{c['conteo_reflejado_Nr']},"
-                           f"{c['coincidencias_Nc']},{c['g2_calculado']},"
-                           f"{c['estadistica_insuficiente']}")
-        for i, c in enumerate(punto["tres_detectores"]["corridas"], 1):
-            lineas.append(f"{punto['angulo_grados']},{punto['bs_trans_efectivo']},3,{i},"
-                           f"{cfg['coincidencia_ventana_ns']},{cfg['duracion_prueba_us']},"
-                           f"{c['conteo_testigo_Ni']},{c['conteo_transmitido_Nt']},"
-                           f"{c['conteo_reflejado_Nr']},{c['coincidencias_Nc']},"
-                           f"{c['g2_calculado']},{c['estadistica_insuficiente']}")
-    error_csv = utils.intentar_escribir_texto(nombre_csv, "\n".join(lineas) + "\n")
-    meta["csv_generado"] = nombre_csv if error_csv is None else None
-    if error_csv is not None:
-        meta["advertencia_csv"] = f"No se pudo escribir el CSV: {error_csv}"
+    csv_name = f"results_grangier_hwp_{timestamp}_{seed}.csv"
+    lines = ["angle_deg,effective_bs_trans,detector_mode,num_test,CoinWin_ns,Tp_us,"
+             "NG_witness,NGT_transmitted,NGR_reflected,NGTR_triple_coincidence,"
+             "g2_calculated,insufficient_statistics"]
+    for point in sweep:
+        for i, c in enumerate(point["two_detectors"]["runs"], 1):
+            lines.append(f"{point['angle_deg']},{point['effective_bs_trans']},2,{i},"
+                         f"{cfg['coincidence_window_ns']},{cfg['test_duration_us']},"
+                         f",{c['transmitted_count_Nt']},{c['reflected_count_Nr']},"
+                         f"{c['coincidences_Nc']},{c['g2_calculated']},"
+                         f"{c['insufficient_statistics']}")
+        for i, c in enumerate(point["three_detectors"]["runs"], 1):
+            lines.append(f"{point['angle_deg']},{point['effective_bs_trans']},3,{i},"
+                         f"{cfg['coincidence_window_ns']},{cfg['test_duration_us']},"
+                         f"{c['witness_count_Ni']},{c['transmitted_count_Nt']},"
+                         f"{c['reflected_count_Nr']},{c['coincidences_Nc']},"
+                         f"{c['g2_calculated']},{c['insufficient_statistics']}")
+    csv_error = utils.try_write_text(csv_name, "\n".join(lines) + "\n")
+    meta["csv_generated"] = csv_name if csv_error is None else None
+    if csv_error is not None:
+        meta["csv_warning"] = f"No se pudo escribir el CSV: {csv_error}"
 
-    utils.emitir_progreso({"tipo": "fin", "experimento": EXPERIMENTO, "status": "ok"})
-    return utils.construir_respuesta_ok(EXPERIMENTO, resultados, meta)
+    utils.emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "ok"})
+    return utils.build_ok_response(EXPERIMENT, results, meta)
 
 if __name__ == "__main__":
-    datos_entrada, error_lectura = utils.leer_input_con_reintentos("input.json")
-    if error_lectura:
-        resultado = utils.construir_respuesta_error(error_lectura, experimento=EXPERIMENTO)
+    input_data, read_error = utils.read_input_with_retries("input.json")
+    if read_error:
+        result = utils.build_error_response(read_error, experiment=EXPERIMENT)
     else:
-        resultado = ejecutar(utils.extraer_parametros(datos_entrada))
+        result = run(utils.extract_parameters(input_data))
 
-    utils.escribir_json_atomico("output.json", resultado)
-    print(f"[simulator] status={resultado.get('status')}")
+    utils.write_json_atomic("output.json", result)
+    print(f"[simulator] status={result.get('status')}")

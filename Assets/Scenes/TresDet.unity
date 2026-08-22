@@ -2476,8 +2476,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1105349204}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarFin
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleCompletion
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2491,8 +2491,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1105349204}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarProgreso
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleProgress
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2506,8 +2506,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1105349204}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: ManejarError
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: HandleError
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3603,8 +3603,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1105349204}
-        m_TargetAssemblyTypeName: ControladorInterfazSimulacion, Assembly-CSharp
-        m_MethodName: EjecutarExperimento
+        m_TargetAssemblyTypeName: SimulationUIController, Assembly-CSharp
+        m_MethodName: RunExperiment
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

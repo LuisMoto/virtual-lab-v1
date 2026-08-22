@@ -4,62 +4,62 @@ import traceback
 
 import utils
 import simulator
-import simulador_ondas
+import wave_simulator
 
 OUTPUT_PATH = "output.json"
 INPUT_PATH = "input.json"
 
-EXPERIMENTOS = {
+EXPERIMENTS = {
     "grangier_hwp": simulator,
-    "interferencia_ondas": simulador_ondas,
+    "wave_interference": wave_simulator,
 }
 
 
 def main() -> int:
     if len(sys.argv) < 2:
-        resultado = utils.construir_respuesta_error(
-            f"Falta el argumento de experimento. Uso: python main.py <{'|'.join(EXPERIMENTOS)}>"
+        result = utils.build_error_response(
+            f"Falta el argumento de experimento. Uso: python main.py <{'|'.join(EXPERIMENTS)}>"
         )
-        utils.escribir_json_atomico(OUTPUT_PATH, resultado)
+        utils.write_json_atomic(OUTPUT_PATH, result)
         return 1
 
-    nombre_experimento = sys.argv[1].strip().lower()
-    modulo = EXPERIMENTOS.get(nombre_experimento)
-    if modulo is None:
-        resultado = utils.construir_respuesta_error(
-            f"Experimento desconocido: '{nombre_experimento}'. "
-            f"Válidos: {', '.join(EXPERIMENTOS)}."
+    experiment_name = sys.argv[1].strip().lower()
+    module = EXPERIMENTS.get(experiment_name)
+    if module is None:
+        result = utils.build_error_response(
+            f"Experimento desconocido: '{experiment_name}'. "
+            f"Válidos: {', '.join(EXPERIMENTS)}."
         )
-        utils.escribir_json_atomico(OUTPUT_PATH, resultado)
+        utils.write_json_atomic(OUTPUT_PATH, result)
         return 1
 
-    datos_entrada, error_lectura = utils.leer_input_con_reintentos(INPUT_PATH)
-    if error_lectura is not None:
-        resultado = utils.construir_respuesta_error(
-            f"No se pudo leer '{INPUT_PATH}': {error_lectura}",
-            experimento=nombre_experimento,
+    input_data, read_error = utils.read_input_with_retries(INPUT_PATH)
+    if read_error is not None:
+        result = utils.build_error_response(
+            f"No se pudo leer '{INPUT_PATH}': {read_error}",
+            experiment=experiment_name,
         )
-        utils.escribir_json_atomico(OUTPUT_PATH, resultado)
+        utils.write_json_atomic(OUTPUT_PATH, result)
         return 1
 
-    params = utils.extraer_parametros(datos_entrada)
+    params = utils.extract_parameters(input_data)
 
     try:
-        resultado = modulo.ejecutar(params)
+        result = module.run(params)
     except Exception as e:
-        resultado = utils.construir_respuesta_error(
-            f"Error inesperado ejecutando '{nombre_experimento}': {e}",
+        result = utils.build_error_response(
+            f"Error inesperado ejecutando '{experiment_name}': {e}",
             {"traceback": traceback.format_exc()},
-            experimento=nombre_experimento,
+            experiment=experiment_name,
         )
 
     try:
-        utils.escribir_json_atomico(OUTPUT_PATH, resultado)
+        utils.write_json_atomic(OUTPUT_PATH, result)
     except Exception as e:
         print(f"[ERROR CRÍTICO] No se pudo escribir '{OUTPUT_PATH}': {e}", file=sys.stderr)
         return 1
 
-    return 0 if resultado.get("status") == "ok" else 1
+    return 0 if result.get("status") == "ok" else 1
 
 
 if __name__ == "__main__":

@@ -1,48 +1,49 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class LaserSource : MonoBehaviour
 {
-    public LineRenderer laserUV;
+    [FormerlySerializedAs("laserUV")]
+    public LineRenderer uvLaser;
 
-    public CristalBBO cristal;
+    [FormerlySerializedAs("cristal")]
+    public BboCrystal crystal;
 
-    private bool activo = false;
+    private bool isActive = false;
 
     void Start()
     {
-        laserUV.enabled = false;
+        uvLaser.enabled = false;
 
-        laserUV.startWidth = 0.03f;
-        laserUV.endWidth = 0.03f;
+        uvLaser.startWidth = 0.03f;
+        uvLaser.endWidth = 0.03f;
 
-        laserUV.material = new Material(Shader.Find("Sprites/Default"));
+        uvLaser.material = new Material(Shader.Find("Sprites/Default"));
 
         Color uv = new Color(0.6f, 0f, 1f);
 
-        laserUV.startColor = uv;
-        laserUV.endColor = uv;
+        uvLaser.startColor = uv;
+        uvLaser.endColor = uv;
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            activo = !activo;
+            isActive = !isActive;
 
-            laserUV.enabled = activo;
+            uvLaser.enabled = isActive;
 
-            if (activo)
+            if (isActive)
             {
-                laserUV.SetPosition(0, transform.position);
-                laserUV.SetPosition(1, cristal.transform.position);
+                uvLaser.SetPosition(0, transform.position);
+                uvLaser.SetPosition(1, crystal.transform.position);
 
-                cristal.ActivarCristal();
+                crystal.ActivateCrystal();
             }
             else
             {
-                cristal.ApagarCristal();
+                crystal.DeactivateCrystal();
             }
         }
     }
