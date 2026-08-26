@@ -1,5 +1,11 @@
 # VR Optical Physics Simulator
 
+![Unity](https://img.shields.io/badge/UNITY-VR_DEVELOPMENT-000000?style=for-the-badge&logo=unity&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-FRONTEND_ARCHITECTURE-512BD4?style=for-the-badge&logo=c-sharp&logoColor=white)
+![Python](https://img.shields.io/badge/PYTHON-PHYSICS_BACKEND-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FASTAPI-WEBSOCKETS-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Status](https://img.shields.io/badge/STATUS-IN_DEVELOPMENT-brightgreen?style=for-the-badge)
+
 **Immersive Virtual Reality Simulation for Quantum and Optical Physics**
 
 Built by Luis Moto and Nathalia Jazmín Ballesteros Luna — equal contributors.
