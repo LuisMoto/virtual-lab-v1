@@ -85,10 +85,10 @@ def validate_params(params: dict) -> Tuple[bool, str, Dict[str, Any]]:
 def simulate_physical_experiment(mode: int, num_pulses: int, rng: random.Random,
                                  witness_prob: float, bs_trans: float,
                                  dark_count_rate: float, detector_efficiency: float) -> dict:
-    Nt = 0
-    Nr = 0
-    Nc = 0
-    Ni = 0
+    n_t = 0
+    n_r = 0
+    n_c = 0
+    n_i = 0
 
     for _ in range(num_pulses):
         click_t = False
@@ -112,26 +112,26 @@ def simulate_physical_experiment(mode: int, num_pulses: int, rng: random.Random,
         if rng.random() < dark_count_rate: click_t = True
         if rng.random() < dark_count_rate: click_r = True
 
-        if click_i: Ni += 1
-        if click_t: Nt += 1
-        if click_r: Nr += 1
-        if click_t and click_r: Nc += 1
+        if click_i: n_i += 1
+        if click_t: n_t += 1
+        if click_r: n_r += 1
+        if click_t and click_r: n_c += 1
 
     g2 = 0.0
     insufficient = True
-    if Nt > 0 and Nr > 0:
-        if mode == 3 and Ni > 0:
-            g2 = (Nc * Ni) / (Nt * Nr)
+    if n_t > 0 and n_r > 0:
+        if mode == 3 and n_i > 0:
+            g2 = (n_c * n_i) / (n_t * n_r)
             insufficient = False
         elif mode == 2:
-            g2 = (Nc * num_pulses) / (Nt * Nr)
+            g2 = (n_c * num_pulses) / (n_t * n_r)
             insufficient = False
 
     return {
-        "witness_count_Ni": Ni,
-        "transmitted_count_Nt": Nt,
-        "reflected_count_Nr": Nr,
-        "coincidences_Nc": Nc,
+        "witness_count": n_i,
+        "transmitted_count": n_t,
+        "reflected_count": n_r,
+        "coincidences": n_c,
         "g2_calculated": round(g2, 6),
         "insufficient_statistics": insufficient
     }
@@ -144,12 +144,12 @@ def _emit_run_progress(angle: float, mode: int, num_test: int,
         "angle_deg": angle,
         "detector_mode": mode,
         "num_test": num_test,
-        "CoinWin_ns": cfg["coincidence_window_ns"],
-        "Tp_us": cfg["test_duration_us"],
-        "NG": run["witness_count_Ni"] if mode == 3 else 0,
-        "NGT": run["transmitted_count_Nt"],
-        "NGR": run["reflected_count_Nr"],
-        "NGTR": run["coincidences_Nc"],
+        "coincidence_window_ns": cfg["coincidence_window_ns"],
+        "pulse_period_us": cfg["test_duration_us"],
+        "witness_count": run["witness_count"] if mode == 3 else 0,
+        "transmitted_count": run["transmitted_count"],
+        "reflected_count": run["reflected_count"],
+        "triple_coincidence_count": run["coincidences"],
         "g2": run["g2_calculated"],
         "insufficient_statistics": run["insufficient_statistics"],
     })
@@ -221,7 +221,7 @@ def run(params: dict) -> Dict[str, Any]:
                 "two_detectors": {
                     "runs": [
                         {
-                            "coincidences_Nc": last_run_2d["coincidences_Nc"],
+                            "coincidences": last_run_2d["coincidences"],
                             "g2_calculated": last_run_2d["g2_calculated"],
                             "insufficient_statistics": last_run_2d["insufficient_statistics"],
                         }
@@ -230,7 +230,7 @@ def run(params: dict) -> Dict[str, Any]:
                 "three_detectors": {
                     "runs": [
                         {
-                            "coincidences_Nc": last_run_3d["coincidences_Nc"],
+                            "coincidences": last_run_3d["coincidences"],
                             "g2_calculated": last_run_3d["g2_calculated"],
                             "insufficient_statistics": last_run_3d["insufficient_statistics"],
                         }
@@ -247,21 +247,21 @@ def run(params: dict) -> Dict[str, Any]:
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     csv_name = f"results_grangier_hwp_{timestamp}_{seed}.csv"
-    lines = ["angle_deg,effective_bs_trans,detector_mode,num_test,CoinWin_ns,Tp_us,"
-             "NG_witness,NGT_transmitted,NGR_reflected,NGTR_triple_coincidence,"
+    lines = ["angle_deg,effective_bs_trans,detector_mode,num_test,coincidence_window_ns,pulse_period_us,"
+             "witness_count,transmitted_count,reflected_count,coincidences,"
              "g2_calculated,insufficient_statistics"]
     for point in sweep:
         for i, c in enumerate(point["two_detectors"]["runs"], 1):
             lines.append(f"{point['angle_deg']},{point['effective_bs_trans']},2,{i},"
                          f"{cfg['coincidence_window_ns']},{cfg['test_duration_us']},"
-                         f",{c['transmitted_count_Nt']},{c['reflected_count_Nr']},"
-                         f"{c['coincidences_Nc']},{c['g2_calculated']},"
+                         f",{c['transmitted_count']},{c['reflected_count']},"
+                         f"{c['coincidences']},{c['g2_calculated']},"
                          f"{c['insufficient_statistics']}")
         for i, c in enumerate(point["three_detectors"]["runs"], 1):
             lines.append(f"{point['angle_deg']},{point['effective_bs_trans']},3,{i},"
                          f"{cfg['coincidence_window_ns']},{cfg['test_duration_us']},"
-                         f"{c['witness_count_Ni']},{c['transmitted_count_Nt']},"
-                         f"{c['reflected_count_Nr']},{c['coincidences_Nc']},"
+                         f"{c['witness_count']},{c['transmitted_count']},"
+                         f"{c['reflected_count']},{c['coincidences']},"
                          f"{c['g2_calculated']},{c['insufficient_statistics']}")
     csv_error = utils.try_write_text(csv_name, "\n".join(lines) + "\n")
     meta["csv_generated"] = csv_name if csv_error is None else None

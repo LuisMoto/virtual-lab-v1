@@ -6,13 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/1Intro.unity
+    path: Assets/Scenes/Scene_1Intro.unity
     guid: 3e5e78e87e658804baffefa08ae6d0d1
   - enabled: 1
-    path: Assets/Scenes/DosDet.unity
+    path: Assets/Scenes/Scene_DosDet.unity
     guid: 580754aaf7637574998707006d91f0af
   - enabled: 1
-    path: Assets/Scenes/TresDet.unity
+    path: Assets/Scenes/Scene_TresDet.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 8d229a6f56889f645aa8b3d8a29d860c,
