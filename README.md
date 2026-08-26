@@ -45,6 +45,7 @@ Key questions explored during development:
 
 The project is organized as follows to ensure modularity and reproducibility:
 
+```text
 .
 ├── README.md
 ├── .gitignore
