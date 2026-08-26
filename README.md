@@ -8,7 +8,7 @@
 
 **Un laboratorio remoto de óptica y física cuántica, simulado en Realidad Virtual.**
 
-Construido por Ernesto, Luis Moto y Nathalia Jazmín Ballesteros Luna — colaboradores.
+Construido por Ernesto, Luis Moto y Nathalia Ballesteros — colaboradores.
 
 ## Por qué existe este proyecto
 
