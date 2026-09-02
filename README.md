@@ -58,16 +58,16 @@ La migración: **Semana 1 (2026-08-26)** quedó completada — `SceneController.
 - Borrador funcional de API en FastAPI (`Backend/server.py`, endpoint `POST /simulate`).
 - Documentación técnica completa y versionada en `Docs/` (arquitectura real, frontend, backend, brechas de cumplimiento, plan de migración y estándares de código).
 
-## Tools and Technologies
+## Herramientas
 
-| Category | Tools / Methods |
+| Categorías | Herramientas |
 | :--- | :--- |
 | **Frontend & VR** | Unity, C#, XR Interaction Toolkit, Newtonsoft.Json |
 | **Backend & Physics** | Python, FastAPI (en migración hacia SSE/WebSockets — ver arriba) |
 | **3D Modeling & Art** | Blender, PBR Materials, Universal Render Pipeline (URP) |
 | **Version Control & Architecture** | Git, Monorepo, Singleton Pattern, DTO Mapping |
 
-## Directory Structure
+## Estructura del Directorio
 
 ```text
 .
