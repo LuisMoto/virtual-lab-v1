@@ -77,19 +77,19 @@ La eficiencia del desarrollo se basa en cuatro pilares de diseño preventivo:
 
 Esta sección se actualiza conforme avanza cada semana — es el punto donde este documento deja de ser solo el plan original y empieza a reflejar qué tan cerca está el código real de cumplirlo.
 
-### Semana 1 (2026-08-26) — ✅ Completada
+### Semana 1 (2026-08-26) — Completada
 
 | Entregable del plan | Estado | Dónde |
 |---|---|---|
-| 1.1 — `SceneController.cs` (Singleton) | ✅ Implementado | `Assets/Scripts/Managers/SceneController.cs` — navegación (`LoadIntro`/`LoadDosDetectores`/`LoadTresDetectores`) y estado del experimento (`CurrentExperiment`) centralizados; `DialogueManager.SelectOption()` ya delega ahí. |
-| Reestructuración de `Assets/Scripts/` a organización por capas | ✅ Implementado | `Controllers/`, `Managers/`, `Models/`, `Networking/` (nueva, vacía) — migrado con `git mv` para preservar GUIDs; ver `ESTANDARES_DOCUMENTACION_TECNICA.md` §3. |
-| Preparación de interacción física del láser (previo a 3.3) | ✅ Implementado | `LaserSource.cs` — se quitó `Input.GetKeyDown`; se agregaron `ToggleLaser()`/`TurnOn()`/`TurnOff()` públicos, listos para conectarse en el Inspector. |
-| 1.3 (parcial) — borrador inicial de FastAPI POST | 🟡 Borrador funcional | `Backend/server.py` — `POST /simulate` funcional (reutiliza `simulator.run()`); `GET /simulate/stream` (SSE) es un placeholder explícito, sin progreso real todavía. `Backend/requirements.txt` agregado (`fastapi`, `uvicorn[standard]`). |
-| Documentación alineada al plan | ✅ Implementado | `ESTANDARES_DOCUMENTACION_TECNICA.md` v2.2.0 — integra `SceneController` como estándar (§5.11) y documenta FastAPI/SSE/WebSocket como objetivo activo (§7.4), no como arquitectura ficticia. |
+| 1.1 — `SceneController.cs` (Singleton) | Implementado | `Assets/Scripts/Managers/SceneController.cs` — navegación (`LoadIntro`/`LoadDosDetectores`/`LoadTresDetectores`) y estado del experimento (`CurrentExperiment`) centralizados; `DialogueManager.SelectOption()` ya delega ahí. |
+| Reestructuración de `Assets/Scripts/` a organización por capas | Implementado | `Controllers/`, `Managers/`, `Models/`, `Networking/` (nueva, vacía) — migrado con `git mv` para preservar GUIDs; ver `ESTANDARES_DOCUMENTACION_TECNICA.md` §3. |
+| Preparación de interacción física del láser (previo a 3.3) | Implementado | `LaserSource.cs` — se quitó `Input.GetKeyDown`; se agregaron `ToggleLaser()`/`TurnOn()`/`TurnOff()` públicos, listos para conectarse en el Inspector. |
+| 1.3 (parcial) — borrador inicial de FastAPI POST | Borrador funcional | `Backend/server.py` — `POST /simulate` funcional (reutiliza `simulator.run()`); `GET /simulate/stream` (SSE) es un placeholder explícito, sin progreso real todavía. `Backend/requirements.txt` agregado (`fastapi`, `uvicorn[standard]`). |
+| Documentación alineada al plan | Implementado | `ESTANDARES_DOCUMENTACION_TECNICA.md` v2.2.0 — integra `SceneController` como estándar (§5.11) y documenta FastAPI/SSE/WebSocket como objetivo activo (§7.4), no como arquitectura ficticia. |
 
 **Pendiente explícito para Semana 2** (no adelantado esta semana, a propósito): conectar el progreso real de la simulación al endpoint SSE (hoy `simulator.py` solo emite progreso por `stdout` vía `utils.emit_progress()`, un mecanismo pensado para el subproceso de `main.py`, no para un servidor persistente); implementar el cliente `UnityWebRequest` en Unity (1.4); Dockerización del backend (1.5).
 
-### Semanas 2–10 — ⬜ No iniciadas
+### Semanas 2–10 — No iniciadas
 
 Sin cambios sobre el plan original todavía. Se actualizará esta sección al cierre de cada semana.
 
