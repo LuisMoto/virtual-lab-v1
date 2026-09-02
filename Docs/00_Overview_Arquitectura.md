@@ -1,6 +1,6 @@
 # 00. Overview y Arquitectura Real — virtual-lab-v1
 
-**Tipo de documento**: As-built (estado real observado en el repositorio, no aspiracional).
+**Tipo de documento**: As-built (estado real).
 **Fecha de auditoría**: 2026-08-26
 **Rama auditada**: `MVP_escenas`
 **Commit HEAD al momento de auditar**: `f4d59d6` — "refactor: homologacion de codigo, JSON y convenciones a ingles"
