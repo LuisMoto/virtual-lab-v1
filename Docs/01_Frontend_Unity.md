@@ -23,9 +23,9 @@ Assets/Scripts/
     └── (vacía — solo `.gitkeep`; ver nota abajo)
 ```
 
-**Nota de nomenclatura (✅ resuelta)**: los nombres de archivo/clase individuales ya estaban en inglés (producto del commit `f4d59d6`, "homologacion... a ingles"); las carpetas `Dialogos/`→`Dialogue/` y `Optica/`→`Optics/` se renombraron con `git mv` para cerrar la brecha de idioma que quedaba abierta — ver fix en `03_Cumplimiento_y_Brechas.md` §4.
+**Nota de nomenclatura (resuelta)**: los nombres de archivo/clase individuales ya estaban en inglés (producto del commit `f4d59d6`, "homologacion... a ingles"); las carpetas `Dialogos/`→`Dialogue/` y `Optica/`→`Optics/` se renombraron con `git mv` para cerrar la brecha de idioma que quedaba abierta — ver fix en `03_Cumplimiento_y_Brechas.md` §4.
 
-**Nota sobre `Utils/` (✅ resuelta)**: los 3 scripts de `VolumetricLines` (plugin de terceros para renderizar los haces láser como líneas volumétricas) y sus 4 ejemplos de demo vivían directamente dentro de `Assets/Scripts/Utils/`, mezclados con utilidades propias del proyecto. Se movieron a `Assets/ThirdPartyOverrides/VolumetricLines/` (con `Examples/` como subcarpeta) — ver fix en `03_Cumplimiento_y_Brechas.md` §5. `Scripts/Utils/` queda vacía (con `.gitkeep`, tal como la prescribe la Guía) hasta que el proyecto tenga una utilidad propia que poner ahí.
+**Nota sobre `Utils/` (resuelta)**: los 3 scripts de `VolumetricLines` (plugin de terceros para renderizar los haces láser como líneas volumétricas) y sus 4 ejemplos de demo vivían directamente dentro de `Assets/Scripts/Utils/`, mezclados con utilidades propias del proyecto. Se movieron a `Assets/ThirdPartyOverrides/VolumetricLines/` (con `Examples/` como subcarpeta) — ver fix en `03_Cumplimiento_y_Brechas.md` §5. `Scripts/Utils/` queda vacía (con `.gitkeep`, tal como la prescribe la Guía) hasta que el proyecto tenga una utilidad propia que poner ahí.
 
 ---
 
@@ -40,7 +40,7 @@ Assets/Scripts/
 
 - Define las DTOs `GrangierOutput` / `GrangierResults` / `SweepPoint` / `DetectorRuns` / `Run`, cada una con su contraparte `...Wire`, siguiendo el mismo patrón `FromWire()`.
 - `UpdateFloatingPanels()`: lee `output.json` **una sola vez, en `Start()`**, y actualiza dos paneles flotantes en el mundo (`coincidencesPanel`, `g2Panel`) con el resultado. Usa `hwpSweep[0]` — correcto dado que Python solo escribe un punto en `hwp_sweep` (ver `02_Backend_Python.md`).
-- `ShowLiveProgress(ProgressLine p)`: método completo, escrito específicamente para refrescar esos mismos paneles en tiempo real conforme llegan líneas de progreso. **✅ Ahora se invoca**: `Start()` se suscribe por código (`GetComponent<SimulationControllerVR>().OnProgressReceived.AddListener(ShowLiveProgress)`), con `RemoveListener` simétrico en `OnDestroy()` — ver fix en `03_Cumplimiento_y_Brechas.md` §1. Nota aparte: en `Scene_DosDet.unity` los campos `coincidencesPanel`/`g2Panel` siguen sin asignar en el Inspector (no hay UI world-space creada para ellos todavía), así que hoy el método corre pero sale temprano tras loguear un warning — sigue pendiente crear esa UI.
+- `ShowLiveProgress(ProgressLine p)`: método completo, escrito específicamente para refrescar esos mismos paneles en tiempo real conforme llegan líneas de progreso. **Ahora se invoca**: `Start()` se suscribe por código (`GetComponent<SimulationControllerVR>().OnProgressReceived.AddListener(ShowLiveProgress)`), con `RemoveListener` simétrico en `OnDestroy()` — ver fix en `03_Cumplimiento_y_Brechas.md` §1. Nota aparte: en `Scene_DosDet.unity` los campos `coincidencesPanel`/`g2Panel` siguen sin asignar en el Inspector (no hay UI world-space creada para ellos todavía), así que hoy el método corre pero sale temprano tras loguear un warning — sigue pendiente crear esa UI.
 - Presente como componente en `Scene_DosDet.unity` (confirmado por GUID `3400b660265c49a48a8412f5e87ec2ed`). **Ausente** en `Scene_TresDet.unity` y `Scene_1Intro.unity`.
 
 ### 2.3 `SimulationUIController.cs` — UI de canvas flotante (loading/terminal/summary)
@@ -94,7 +94,7 @@ La presencia de `BboCrystal`/`LaserSource`/`BeamSplitter` en `Scene_1Intro` corr
 
 ---
 
-## 6. XR: paquetes instalados vs. uso real (🟡 corregido)
+## 6. XR: paquetes instalados vs. uso real (corregido)
 
 **Corrección importante sobre este hallazgo**: la búsqueda original filtraba por un mapa de GUID construido desde `Assets/Scripts/**/*.cs.meta` — un método que **no puede** encontrar componentes de paquetes (XR Interaction Toolkit vive en `Library/PackageCache`, fuera de `Assets/Scripts/`). Es decir, el "0 coincidencias" medía una limitación de la búsqueda, no la ausencia real del componente. Repitiendo la búsqueda identificando el componente por la firma de sus campos serializados (`m_InteractionManager`, `m_SelectMode`, `m_FocusMode`, sin `m_AttachTransform`/`movementType` de un `XRGrabInteractable`) en vez de por GUID:
 
