@@ -8,7 +8,7 @@ Este documento junta todo lo encontrado al revisar el código y las escenas real
 
 ---
 
-## 1. ✅ RESUELTO — Hallazgo crítico: los paneles flotantes de progreso nunca se actualizaban en vivo
+## 1. RESUELTO — Hallazgo crítico: los paneles flotantes de progreso nunca se actualizaban en vivo
 
 **Dónde**: `Assets/Scripts/VR/GrangierDataReader.cs`, método `ShowLiveProgress(ProgressLine p)`.
 
@@ -40,7 +40,7 @@ No se creó UI nueva para resolver esto — construir esos dos paneles en el esp
 
 ---
 
-## 2. ✅ RESUELTO — Inconsistencia de flujo entre `Scene_DosDet` y `Scene_TresDet`
+## 2. RESUELTO — Inconsistencia de flujo entre `Scene_DosDet` y `Scene_TresDet`
 
 - `Scene_TresDet.unity` conecta su botón de "correr experimento" a `SimulationUIController.RunExperiment()` — el flujo correcto, que resetea el estado y muestra `loadingView` antes de lanzar la simulación.
 - `Scene_DosDet.unity` conectaba el mismo botón directamente a `SimulationControllerVR.RunGrangierSimulation()`, **saltándose** ese reseteo/vista de carga.
@@ -53,7 +53,7 @@ No se creó UI nueva para resolver esto — construir esos dos paneles en el esp
 
 ---
 
-## 3. ✅ RESUELTO — La Guía de Estándares describía una arquitectura de Backend que no era la real
+## 3. RESUELTO — La Guía de Estándares describía una arquitectura de Backend que no era la real
 
 Las secciones 2, 6 y 7 de `ESTANDARES_DOCUMENTACION_TECNICA.md` describían el Backend como un servicio **FastAPI + WebSocket + Pydantic** (`server.py`, `optical_physics.py`, carpetas `models/`/`utils/`/`tests/`, eventos `request_simulation_start`/`response_progress_update` sobre WebSocket, esquemas `SimulationRequest` con Pydantic) — nada de eso existe en el código real (ver `02_Backend_Python.md`).
 
@@ -61,7 +61,7 @@ Las secciones 2, 6 y 7 de `ESTANDARES_DOCUMENTACION_TECNICA.md` describían el B
 
 ---
 
-## 4. 🟡 PARCIALMENTE RESUELTO — Estructura de `Assets/Scripts/`: por dominio, no por capa — y con carpetas en español
+## 4. PARCIALMENTE RESUELTO — Estructura de `Assets/Scripts/`: por dominio, no por capa — y con carpetas en español
 
 La Guía (sección 3) prescribe subcarpetas por **capa arquitectónica** dentro de `Scripts/`: `Controllers/`, `Managers/`, `Interfaces/`, `Models/`, `Utils/`, `WebSocket/`, `XR/`, `Editor/`.
 
@@ -73,7 +73,7 @@ El código real se organiza por **dominio**: `Dialogue/`, `Optics/`, `VR/`, `Uti
 
 ---
 
-## 5. ✅ RESUELTO — Plugin de terceros (`VolumetricLines`) integrado dentro de `Scripts/Utils/`
+## 5. RESUELTO — Plugin de terceros (`VolumetricLines`) integrado dentro de `Scripts/Utils/`
 
 La Guía (sección 1.4) es explícita: contenido de terceros no se reestructura ni se mezcla con código propio; si necesita modificarse, la copia modificada va a `Assets/ThirdPartyOverrides/`. Los 3 scripts de `VolumetricLines` (más sus 4 ejemplos de demo) estaban reubicados dentro de `Assets/Scripts/Utils/`, junto a utilidades propias del proyecto — exactamente la mezcla que la regla busca evitar.
 
@@ -83,7 +83,7 @@ La Guía (sección 1.4) es explícita: contenido de terceros no se reestructura 
 
 ---
 
-## 6. 🟡 CORREGIDO — XR: sí hay Interactables reales en uso; el teclado es una dependencia más acotada de lo que se pensó
+## 6. CORREGIDO — XR: sí hay Interactables reales en uso; el teclado es una dependencia más acotada de lo que se pensó
 
 Ver detalle completo (y la misma corrección) en `01_Frontend_Unity.md` §6.
 
@@ -95,7 +95,7 @@ Ver detalle completo (y la misma corrección) en `01_Frontend_Unity.md` §6.
 
 ---
 
-## 7. 🟡 Re-adición de "3D Laboratory Environment with Appratus"
+## 7. Re-adición de "3D Laboratory Environment with Appratus"
 
 El commit `a4f2b02` ("Elimina permanentemente paquetes verificados sin uso...") borró deliberadamente este paquete de assets por considerarlo sin uso, tras verificación. El estado pendiente actual (sin commitear) lo **vuelve a agregar** — 45 archivos nuevos bajo `Assets/3D Laboratory Environment with Appratus/`.
 
@@ -103,7 +103,7 @@ Puede ser perfectamente intencional (alguien decidió que sí se necesita despu�
 
 ---
 
-## 8. 🟢 Detalle transitorio, no persistente: `coincidences_Nc` vs `coincidences`
+## 8. Detalle transitorio, no persistente: `coincidences_Nc` vs `coincidences`
 
 Ver `02_Backend_Python.md` §4.3. El `output.json` en disco (del 2026-08-23, previo al refactor) usa `coincidences_Nc`; el código actual escribe `coincidences`. Como el archivo está en `.gitignore`, se autocorrige en la siguiente corrida y no afecta a nadie que clone el repo. Se documenta únicamente para que no sorprenda a quien inspeccione ese archivo puntual.
 
