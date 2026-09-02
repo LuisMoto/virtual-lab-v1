@@ -1,6 +1,7 @@
 # 02. Backend Python — Estado Real
 
-**Fecha de auditoría**: 2026-08-26 · **Rama**: `MVP_escenas`
+**Fecha de auditoría inicial**: 2026-08-26 · **Rama**: `MVP_escenas`
+**Última actualización**: 2026-09-02 (post Semana 1)
 
 ---
 
@@ -12,13 +13,18 @@ Backend/
 ├── utils.py             (108 líneas — I/O compartido, validación, progreso)
 ├── simulator.py         (283 líneas — experimento Grangier/HWP)
 ├── wave_simulator.py     (47 líneas — experimento Wave Interference)
+├── server.py            (implementado Semana 1 — FastAPI + SSE placeholder)
+├── requirements.txt     (agregado Semana 1 — fastapi, uvicorn[standard])
 ├── input.json            (última entrada real, gitignored)
 ├── output.json            (última salida real, gitignored)
 └── resultados_grangier_hwp_*.csv / results_grangier_hwp_*.csv
-    (~50 archivos, 2026-07-29 a 2026-08-23, gitignored)
+    (~50 archivos, gitignored)
 ```
 
-**No existen** `server.py`, `optical_physics.py`, `requirements.txt`, `models/`, `utils/` (como carpeta), ni `tests/` — pese a que la Guía de Estándares del proyecto (`ESTANDARES_DOCUMENTACION_TECNICA.md`, sección 2) describe esa estructura como la del `Backend/`. Ver brecha en `03_Cumplimiento_y_Brechas.md`.
+**Cambios desde auditoría inicial (2026-08-26)**:
+- `server.py` — agregado en Semana 1. `POST /simulate` funcional, reutiliza `simulator.run()`. `GET /simulate/stream` (SSE) es borrador explícito (placeholder).
+- `requirements.txt` — agregado en Semana 1.
+- `models/`, `utils/` (como carpeta), y `tests/` todavía no existen. Las brechas vinculadas (§03) siguen abiertas para las fases posteriores.
 
 **Housekeeping**: la carpeta acumula decenas de CSV de corridas pasadas (`resultados_grangier_hwp_YYYYMMDD_HHMMSS_<ticks>.csv`, y una variante más reciente sin el prefijo en español, `results_grangier_hwp_...csv` — coincide con el commit de homologación). Están correctamente excluidos de git (`.gitignore` cubre `Backend/*.csv`), pero nada los limpia del disco local; con el tiempo ensucian la carpeta de trabajo. Sugerencia menor: moverlos a una subcarpeta dedicada (p. ej. `Backend/runs/`) o agregar un script de limpieza — no es un problema de repositorio, es higiene de disco local.
 
@@ -105,8 +111,17 @@ FIXED_VISIBILITY_MVP = 0.998  # placeholder, no calculado
 
 Estructura mínima observada en el archivo real; `extract_parameters()` en `utils.py` asume exactamente esta forma anidada.
 
-## 7. Ver también
+## 7. Cambios pendientes de Semana 2
+
+**SSE en vivo**: `GET /simulate/stream` requiere conectar el progreso de `simulator.py` a una cola/callback que SSE consuma. Hoy `emit_progress()` solo emite a `stdout` (idóneo para subproceso local, no para servidor persistente).
+
+**Docker**: `Dockerfile` y `docker-compose.yml` para contenerizar el backend.
+
+Ver `04_Plan_Maestro_Migracion.md` §5 para cronograma completo.
+
+## 8. Ver también
 
 - `00_Overview_Arquitectura.md` §2 — ciclo de vida completo de una corrida (Unity ↔ Python).
 - `01_Frontend_Unity.md` §2 — cómo consume Unity estas mismas líneas de progreso y el `output.json`.
-- `03_Cumplimiento_y_Brechas.md` — brecha entre esta arquitectura real (CLI + stdout + archivos) y la arquitectura FastAPI/WebSocket descrita en la Guía de Estándares.
+- `03_Cumplimiento_y_Brechas.md` — brechas encontradas en auditoría anterior.
+- `04_Plan_Maestro_Migracion.md` §5 — estado de avance semana a semana.
