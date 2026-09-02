@@ -193,7 +193,7 @@ Antes de exportar cualquier archivo `.fbx` desde Blender, garantizar:
 
 Dentro del panel **Hierarchy** de Unity, los objetos no llevan extensiones ni prefijos técnicos. Deben nombrarse de forma **limpia y descriptiva** usando `PascalCase`:
 
-| ✅ Correcto | ❌ Incorrecto |
+| Correcto | Incorrecto |
 |---|---|
 | `OpticalTable` | `SM_Table_final_v2` |
 | `MainCamera` | `Camera` |
@@ -226,12 +226,12 @@ El código del Frontend debe ser modular y seguir las convenciones de C# estánd
 - Un archivo = una clase pública (excepciones: clases de datos pequeñas y estrechamente relacionadas, como un `enum` que solo usa esa clase).
 
 ```csharp
-// ✅ Correcto: SceneController.cs
+// Correcto: SceneController.cs
 public class SceneController : MonoBehaviour
 {
     // ...
 }
-// ❌ Incorrecto: scene_controller.cs, Controllers.cs, CamaraLibre.cs
+// Incorrecto: scene_controller.cs, Controllers.cs, CamaraLibre.cs
 ```
 
 ### 5.2 Métodos y Funciones
@@ -262,12 +262,12 @@ public SimulationState CurrentState { get; private set; }
 - Preferir `[SerializeField] private` sobre `public` directo — expone el campo al Inspector sin permitir que otros scripts lo modifiquen libremente.
 
 ```csharp
-// ✅ Mejor práctica
+// Mejor práctica
 [SerializeField] private string pythonPath;
 [SerializeField] private float targetAngle;
 [SerializeField] private int maxIterations = 100;
 [SerializeField, Range(0f, 1f)] private float reflectivity = 0.95f;
-// ❌ Evitar cuando no sea estrictamente necesario exponer el campo a otros scripts
+// Evitar cuando no sea estrictamente necesario exponer el campo a otros scripts
 public string pythonPath;
 public float targetAngle;
 ```
@@ -354,10 +354,10 @@ A partir de la Semana 1 del Plan Maestro, `SceneController` (en `Managers/`) es 
 - Este singleton es también el lugar designado para alojar, en las Fases 1.3/1.4, el futuro cliente de red (HTTP/SSE hacia `Backend/server.py`, y más adelante WebSocket) — ver el `TODO` marcado al final de `SceneController.cs`. Cualquier lógica de comunicación con el Backend que hoy vive dispersa en `SimulationControllerVR.RunPythonProcess()` debe migrar hacia acá cuando se implemente esa fase, no duplicarse en otro script.
 
 ```csharp
-// ✅ Correcto — UI delega la navegación al singleton centralizado
+// Correcto — UI delega la navegación al singleton centralizado
 SceneController.Instance.LoadDosDetectores();
 
-// ❌ Incorrecto — llamar a SceneManager directamente desde un script de UI/diálogo
+// Incorrecto — llamar a SceneManager directamente desde un script de UI/diálogo
 SceneManager.LoadScene("Scene_DosDet");
 ```
 
@@ -830,9 +830,9 @@ Si el simulador se distribuye en más de un idioma (ej. español e inglés para 
 ```
 
 ```csharp
-// ✅ Correcto
+// Correcto
 uiText.text = LocalizationManager.Get("UI_START_SIMULATION");
-// ❌ Incorrecto — texto hardcodeado en el script
+// Incorrecto — texto hardcodeado en el script
 uiText.text = "Iniciar simulación";
 ```
 
