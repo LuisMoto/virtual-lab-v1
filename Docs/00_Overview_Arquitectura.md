@@ -5,8 +5,6 @@
 **Rama auditada**: `MVP_escenas`
 **Commit HEAD al momento de auditar**: `f4d59d6` — "refactor: homologacion de codigo, JSON y convenciones a ingles"
 
-> ⚠️ **Advertencia sobre el estado del repositorio**: al momento de esta auditoría hay una reorganización masiva **staged pero sin commitear** (~215 cambios: 57 altas, 97 renombres, 12 modificaciones, 9 borrados, 38 archivos nuevos sin trackear). Este documento describe el **working tree actual** (lo que hay en disco ahora, que es lo más fiel a "qué va a pasar" en el próximo commit), no únicamente el último commit. Donde el working tree difiere de HEAD de forma relevante, se indica explícitamente. Ver `03_Cumplimiento_y_Brechas.md` sección "Estado del commit en curso" para el detalle completo de qué incluye ese cambio pendiente.
-
 ---
 
 ## 1. Qué es este proyecto
