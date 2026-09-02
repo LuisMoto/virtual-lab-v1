@@ -131,7 +131,3 @@ Al momento de esta auditoría, `git status` reporta **~215 cambios pendientes si
 - Los renombres masivos de la reorganización en curso (`1Intro.unity`→`Scene_1Intro.unity`, `DialogueManager.prefab`→`PF_DialogueManager.prefab`, etc.) se hicieron como renombres de git reales (`R`), no como borrar+crear — preserva el historial de cada archivo.
 
 ---
-
-## 11. Sobre la documentación anterior (carpeta equivocada)
-
-Antes de auditar este repositorio, se produjo un set de documentos equivalente (Guía de Estándares + 4 documentos as-built) sobre la carpeta `Exp 1 v.1`, que resultó ser un proyecto distinto y desactualizado — no `virtual-lab-v1`. Esos archivos siguen existiendo en `Exp 1 v.1\Docs\` y no se tocaron ni se borraron. Quedan como lo que son: documentación de otro proyecto. Si se quiere, se puede dejar constancia ahí mismo (una nota en ese `README`/`Docs`) de que ese trabajo no aplica a `virtual-lab-v1`, para que nadie lo confunda más adelante — pero es una decisión que le corresponde al usuario, no algo que se resuelva desde este repositorio.
