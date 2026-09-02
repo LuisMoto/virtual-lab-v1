@@ -1,0 +1,218 @@
+// STUB: SSEStreamReader.cs
+// Tarea B2: Cliente SSE (Server-Sent Events) para progreso en vivo
+// Autor: [Luis]
+// Fecha: 2026-09-02
+
+using UnityEngine;
+using UnityEngine.Networking;
+using System;
+using System.Collections;
+
+namespace VirtualLab.Networking
+{
+    /// <summary>
+    /// Lee eventos SSE desde GET /simulate/stream.
+    /// Emite callbacks para cada línea de progreso recibida.
+    ///
+    /// Nota: Unity no tiene EventSource nativo. Esto usa UnityWebRequest
+    /// en modo streaming (chunked).
+    /// </summary>
+    public class SSEStreamReader : MonoBehaviour
+    {
+        // ====================================================================
+        // CONFIGURACIÓN
+        // ====================================================================
+
+        [SerializeField]
+        private string backendUrl = "http://localhost:8000";
+
+
+        // ====================================================================
+        // EVENTOS
+        // ====================================================================
+
+        /// <summary>
+        /// Dispara cuando se recibe una línea de progreso.
+        /// Parámetro: string JSON (la línea completa)
+        /// </summary>
+        public event Action<string> OnProgressLine;
+
+        public event Action OnStreamConnected;
+        public event Action<string> OnStreamError;
+
+
+        // ====================================================================
+        // MÉTODOS PÚBLICOS
+        // ====================================================================
+
+        /// <summary>
+        /// Abre el stream SSE y comienza a leer eventos.
+        /// </summary>
+        public void StartListening()
+        {
+            StartCoroutine(ListenCoroutine());
+        }
+
+
+        /// <summary>
+        /// Detiene la lectura del stream.
+        /// </summary>
+        public void StopListening()
+        {
+            // TODO: Implementar parada limpia (CancelRequest si hay uno activo)
+        }
+
+
+        // ====================================================================
+        // IMPLEMENTACIÓN INTERNA
+        // ====================================================================
+
+        private UnityWebRequest _currentRequest;
+
+        private IEnumerator ListenCoroutine()
+        {
+            string url = $"{backendUrl}/simulate/stream";
+
+            // TODO 1: Crear UnityWebRequest GET
+            _currentRequest = UnityWebRequest.Get(url);
+
+            // TODO 2: Configurar para streaming
+            // - downloadHandler debe procesar datos mientras llegan
+            // - NO usar DownloadHandlerBuffer (bufferea todo)
+            // - Implementar custom handler o polling
+
+            OnStreamConnected?.Invoke();
+
+            // TODO 3: Enviar request
+            yield return _currentRequest.SendWebRequest();
+
+            // TODO 4: Procesar resultado
+            if (_currentRequest.result != UnityWebRequest.Result.Success)
+            {
+                OnStreamError?.Invoke($"Stream Error: {_currentRequest.error}");
+            }
+
+            _currentRequest = null;
+        }
+
+
+        // ====================================================================
+        // PARSING SSE (Server-Sent Events)
+        // ====================================================================
+
+        /// <summary>
+        /// Procesa un buffer de SSE y extrae líneas "data: ..."
+        ///
+        /// Formato SSE:
+        ///   data: {"status": "running", "current": 1}
+        ///   data: {"status": "running", "current": 2}
+        ///   : keep-alive (comentario, ignorar)
+        ///
+        /// TODO: Implementar parsing correcto
+        /// </summary>
+        private void ProcessSSEData(string buffer)
+        {
+            // Dividir por líneas
+            string[] lines = buffer.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+            foreach (string line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                // Ignorar comentarios (líneas que empiezan con :)
+                if (line.StartsWith(":"))
+                    continue;
+
+                // Procesar líneas "data: ..."
+                if (line.StartsWith("data: "))
+                {
+                    string jsonData = line.Substring(6); // Remover "data: "
+                    OnProgressLine?.Invoke(jsonData);
+                }
+            }
+        }
+
+
+        // ====================================================================
+        // INTEGRACIÓN CON SIMULATIONUICONTROLLER
+        // ====================================================================
+
+        // Una vez esto esté integrado, SimulationUIController debe:
+        //
+        // 1. Obtener referencia a SSEStreamReader:
+        //    SSEStreamReader reader = GetComponent<SSEStreamReader>();
+        //
+        // 2. Suscribirse al evento:
+        //    reader.OnProgressLine += (jsonLine) => {
+        //        ProgressLine progress = JsonUtility.FromJson<ProgressLine>(jsonLine);
+        //        HandleProgress(progress);
+        //    };
+        //
+        // 3. Iniciar lectura (idealmente cuando SimulationClient comienza POST):
+        //    reader.StartListening();
+        //
+        // 4. Parar lectura cuando termine la simulación:
+        //    reader.StopListening();
+
+
+        // ====================================================================
+        // DEBUGGING
+        // ====================================================================
+
+        [ContextMenu("Test: GET /simulate/stream")]
+        public void DebugStream()
+        {
+            StartListening();
+        }
+    }
+}
+
+// ============================================================================
+// NOTA TÉCNICA: Streaming en Unity
+// ============================================================================
+//
+// UnityWebRequest tiene limitaciones para SSE real:
+// - DownloadHandlerBuffer: bufferea TODO hasta el final (no streaming)
+// - DownloadHandler personalizado: requiere subclase compleja
+//
+// Alternativas:
+//
+// 1. Usar mientras loop polleando response bytes:
+//    while (!request.isDone) {
+//        byte[] chunk = request.downloadHandler.GetData();
+//        ProcessChunk(chunk);
+//        yield return null;
+//    }
+//
+// 2. Usar TCP directo vía System.Net.Sockets:
+//    socket.Connect("localhost", 8000);
+//    socket.Send(encoding.GetBytes("GET /simulate/stream HTTP/1.1\r\n..."));
+//    StreamReader reader = new StreamReader(socket.InputStream);
+//    while ((line = reader.ReadLine()) != null) {
+//        ProcessLine(line);
+//    }
+//
+// 3. Timer que consulta /simulate/progress cada N ms (simple, menos ideal):
+//    En server.py guardar progreso en variable global
+//    GET /simulate/progress retorna estado actual
+//
+// Para esta semana, recomendación: opción 2 (System.Net.Sockets) es más
+// confiable que el polling personalizado. Si tienes problemas,
+// avisa temprano en la semana.
+
+// ============================================================================
+// CHECKLIST
+// ============================================================================
+// [ ] Crear archivo en Assets/Scripts/Networking/SSEStreamReader.cs
+// [ ] Copiar este stub como punto de partida
+// [ ] Elegir estrategia de streaming (ver NOTA TÉCNICA arriba)
+// [ ] Implementar ListenCoroutine() con la estrategia elegida
+// [ ] Implementar ProcessSSEData() para parsear eventos
+// [ ] Agregar logging para debugging
+// [ ] Probar manualmente: Backend corriendo → inspector Test → ver logs
+// [ ] Integrar en SimulationUIController (B3)
+// [ ] Push a rama semana-2/integracion-red
+//
+// Próximo paso: B3 (conectar B1+B2 a UI existente)
+

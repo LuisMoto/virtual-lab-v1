@@ -1,0 +1,132 @@
+# STUB: simulator_progress_callback.py
+# Tarea A1: Refactorizar emisión de progreso a callback/cola
+# Autor: [Compañera]
+# Fecha: 2026-09-02
+
+# ============================================================================
+# CONTEXTO
+# ============================================================================
+# Hoy simulator.py emite progreso vía utils.emit_progress() que hace print()
+# → funciona para subproceso local (stdout se redirige en Unity)
+# → NO funciona para servidor persistente (FastAPI no lee stdout)
+#
+# Solución: registrar un callback que simulator.py llamará en cada paso
+# El servidor FastAPI lo conectará a una cola que SSE consumirá
+#
+# ANTES (hoy):
+#   def run(params):
+#       ...
+#       utils.emit_progress({"status": "running", "current": i})  # print → stdout
+#
+# DESPUÉS (lo que escribes):
+#   progress_callback = None
+#   def set_progress_callback(fn):
+#       global progress_callback
+#       progress_callback = fn
+#
+#   def run(params):
+#       ...
+#       if progress_callback:
+#           progress_callback({"status": "running", "current": i})
+#       else:
+#           utils.emit_progress(...)  # fallback para CLI
+
+# ============================================================================
+# TAREAS
+# ============================================================================
+
+# 1. En simulator.py, agregar esta variable global (al inicio del archivo)
+#    después de los imports:
+
+progress_callback = None
+
+def set_progress_callback(fn):
+    """
+    Registra un callback que se llama cada vez que hay progreso.
+
+    Parámetros:
+        fn: función(payload: dict) que recibe línea de progreso
+
+    Ejemplo:
+        def mi_callback(line):
+            print(f"Progreso: {line}")
+
+        set_progress_callback(mi_callback)
+    """
+    global progress_callback
+    progress_callback = fn
+
+
+# 2. En simulator.py, reemplazar cada llamada a utils.emit_progress() con:
+
+def _emit_progress(payload):
+    """
+    Emite progreso al callback registrado, o fallback a stdout (CLI).
+    """
+    if progress_callback:
+        progress_callback(payload)
+    else:
+        # Fallback para ejecución CLI (cuando no hay callback registrado)
+        utils.emit_progress(payload)
+
+
+# 3. Actualizar run() para usar _emit_progress() en lugar de utils.emit_progress()
+#    Ejemplo en simulator.py:
+#
+#    OLD:
+#        for run_idx in range(num_runs):
+#            ...
+#            utils.emit_progress({"status": "running", "run": run_idx})
+#
+#    NEW:
+#        for run_idx in range(num_runs):
+#            ...
+#            _emit_progress({"status": "running", "run": run_idx})
+
+
+# 4. En utils.py, agregar esta función auxiliar (para uso en FastAPI):
+
+def create_progress_queue():
+    """
+    Crea una cola thread-safe para pasar progreso del simulador al servidor SSE.
+
+    Retorna:
+        (queue.Queue, callback_function)
+
+    Ejemplo de uso en server.py:
+        progress_queue, progress_callback = utils.create_progress_queue()
+        simulator.set_progress_callback(progress_callback)
+
+        # Después, en el handler SSE:
+        while True:
+            try:
+                line = progress_queue.get(timeout=0.5)
+                yield f"data: {json.dumps(line)}\\n\\n"
+            except queue.Empty:
+                pass
+    """
+    import queue
+    import threading
+
+    q = queue.Queue()
+
+    def callback(payload):
+        q.put(payload)
+
+    return q, callback
+
+
+# ============================================================================
+# CHECKLIST
+# ============================================================================
+# [ ] Agrega variable global progress_callback a simulator.py
+# [ ] Agrega función set_progress_callback() a simulator.py
+# [ ] Agrega función _emit_progress() a simulator.py
+# [ ] Reemplaza todos los utils.emit_progress() con _emit_progress() en run()
+# [ ] Agrega create_progress_queue() a utils.py
+# [ ] Prueba localmente: python main.py grangier_hwp (debe funcionar como antes)
+# [ ] Prueba con callback: set_progress_callback(print) → ve las líneas
+# [ ] Push a rama semana-2/integracion-red
+#
+# Próximo paso: A2 (implementar SSE en server.py que use esta cola)
+

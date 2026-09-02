@@ -1,0 +1,170 @@
+// STUB: SimulationClient.cs
+// Tarea B1: Cliente HTTP que reemplaza System.Diagnostics.Process
+// Autor: [Luis]
+// Fecha: 2026-09-02
+
+using UnityEngine;
+using UnityEngine.Networking;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+namespace VirtualLab.Networking
+{
+    /// <summary>
+    /// Cliente que conecta a FastAPI backend en lugar de lanzar subproceso local.
+    /// Reemplaza SimulationControllerVR.RunPythonProcess() con llamadas HTTP.
+    /// </summary>
+    public class SimulationClient : MonoBehaviour
+    {
+        // ====================================================================
+        // CONFIGURACIÓN
+        // ====================================================================
+
+        [SerializeField]
+        private string backendUrl = "http://localhost:8000";
+
+        [SerializeField]
+        private float requestTimeoutSecs = 300f; // 5 minutos para experimentos largos
+
+
+        // ====================================================================
+        // EVENTOS
+        // ====================================================================
+
+        public event Action<string> OnSimulationStart;
+        public event Action<string> OnSimulationComplete; // json string (output)
+        public event Action<string> OnSimulationError;     // error message
+
+
+        // ====================================================================
+        // MÉTODOS PÚBLICOS
+        // ====================================================================
+
+        /// <summary>
+        /// Lanza una simulación vía POST /simulate.
+        /// </summary>
+        /// <param name="parameters">Parámetros en formato JSON: {"num_pulses": 1000, "num_runs": 5}</param>
+        /// <param name="experiment">Nombre del experimento: "grangier_hwp" o "wave_interference"</param>
+        public void StartSimulation(string parameters, string experiment = "grangier_hwp")
+        {
+            StartCoroutine(SimulateCoroutine(parameters, experiment));
+        }
+
+
+        // ====================================================================
+        // IMPLEMENTACIÓN INTERNA
+        // ====================================================================
+
+        private IEnumerator SimulateCoroutine(string parameters, string experiment)
+        {
+            // TODO 1: Construir payload JSON
+            // Estructura esperada por /simulate:
+            // {
+            //   "configuration": {
+            //     "parameters": { "num_pulses": ..., "num_runs": ... }
+            //   }
+            // }
+
+            string requestBody = BuildRequestBody(parameters);
+
+            // TODO 2: Construir URL
+            string url = $"{backendUrl}/simulate";
+
+            // TODO 3: Crear UnityWebRequest POST
+            // - Usar UnityWebRequest.Post(url, form)
+            // - O UnityWebRequest.PostRawData(url, bytes) si enviamos JSON
+            // - Establecer timeout con request.timeout = requestTimeoutSecs
+
+            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+            {
+                // Cuerpo (JSON)
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(requestBody);
+                request.uploadHandler = new UploadRawData(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+
+                // Headers
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                // Timeout
+                request.timeout = (int)requestTimeoutSecs;
+
+                OnSimulationStart?.Invoke($"Simulando {experiment}...");
+
+                // TODO 4: Enviar y esperar respuesta
+                yield return request.SendWebRequest();
+
+                // TODO 5: Procesar resultado
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    string responseBody = request.downloadHandler.text;
+                    OnSimulationComplete?.Invoke(responseBody);
+                }
+                else
+                {
+                    string error = $"HTTP Error: {request.responseCode} - {request.error}";
+                    OnSimulationError?.Invoke(error);
+                }
+            }
+        }
+
+
+        private string BuildRequestBody(string parameters)
+        {
+            // TODO: Construir JSON con estructura correcta
+            // Entrada: {"num_pulses": 1000, "num_runs": 5}
+            // Salida: {"configuration": {"parameters": {"num_pulses": 1000, "num_runs": 5}}}
+            //
+            // Sugerencia: usar JsonUtility o SimpleJson
+
+            return $"{{\"configuration\": {{\"parameters\": {parameters}}}}}";
+        }
+
+
+        // ====================================================================
+        // INTEGRACIÓN CON SIMULATIONUICONTROLLER
+        // ====================================================================
+
+        // Una vez esto esté integrado, SimulationUIController debe:
+        //
+        // 1. Obtener referencia a SimulationClient:
+        //    SimulationClient client = GetComponent<SimulationClient>();
+        //
+        // 2. Suscribirse a eventos:
+        //    client.OnSimulationStart += (msg) => ShowLoading(msg);
+        //    client.OnSimulationComplete += (json) => HandleCompletion(json);
+        //    client.OnSimulationError += (error) => HandleError(error);
+        //
+        // 3. Lanzar simulación:
+        //    client.StartSimulation("{\"num_pulses\": 1000, \"num_runs\": 5}", "grangier_hwp");
+        //
+        // 4. Ya no usar System.Diagnostics.Process
+
+
+        // ====================================================================
+        // DEBUGGING
+        // ====================================================================
+
+        [ContextMenu("Test: POST /simulate")]
+        public void DebugPost()
+        {
+            string testParams = "{\"num_pulses\": 100, \"num_runs\": 1}";
+            StartSimulation(testParams);
+        }
+    }
+}
+
+// ============================================================================
+// CHECKLIST
+// ============================================================================
+// [ ] Crear archivo en Assets/Scripts/Networking/SimulationClient.cs
+// [ ] Copiar este stub como punto de partida
+// [ ] Implementar BuildRequestBody() con formato correcto
+// [ ] Implementar manejo de respuesta (éxito/error)
+// [ ] Agregar logging (Debug.Log)
+// [ ] Probar manualmente desde Inspector: derecha click → Test: POST /simulate
+// [ ] Integrar en SimulationUIController (B3)
+// [ ] Push a rama semana-2/integracion-red
+//
+// Próximo paso: B2 (SSEStreamReader para progreso en vivo)
+

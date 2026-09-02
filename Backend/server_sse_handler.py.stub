@@ -1,0 +1,174 @@
+# STUB: server_sse_handler.py
+# Tarea A2: Implementar SSE (Server-Sent Events) en FastAPI
+# Autor: [Compañera]
+# Fecha: 2026-09-02
+
+# ============================================================================
+# CONTEXTO
+# ============================================================================
+# Hoy server.py tiene:
+#   @app.post("/simulate")
+#   def simulate(request: SimulationRequest):
+#       result = simulator.run(params)
+#       return result
+#
+# Problema: no hay streaming de progreso en vivo
+# Solución: agregar GET /simulate/stream que emita eventos SSE en tiempo real
+
+# ============================================================================
+# PASOS
+# ============================================================================
+
+# 1. En server.py, importar lo necesario (si no está ya):
+
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+import json
+import asyncio
+import queue
+import simulator
+import utils
+
+app = FastAPI()
+
+
+# 2. Crear una instancia global de la cola de progreso (en server.py):
+
+# Al inicio, después de crear app:
+_progress_queue = None
+_progress_callback = None
+
+def init_progress_system():
+    """Inicializa el sistema de progreso (callback + cola)."""
+    global _progress_queue, _progress_callback
+    _progress_queue, _progress_callback = utils.create_progress_queue()
+    simulator.set_progress_callback(_progress_callback)
+
+
+# Llamar al startup:
+@app.on_event("startup")
+async def startup():
+    init_progress_system()
+
+
+# 3. Refactorizar POST /simulate para usar la cola:
+
+@app.post("/simulate")
+def simulate(request: SimulationRequest):
+    """
+    Simula un experimento. El progreso se emite a través de /simulate/stream.
+    """
+    # Limpiar cola anterior (por si hay eventos viejos)
+    # while not _progress_queue.empty():
+    #     try:
+    #         _progress_queue.get_nowait()
+    #     except queue.Empty:
+    #         break
+
+    params = request.configuration.parameters
+    result = simulator.run(params)
+    return result
+
+
+# 4. Agregar el endpoint SSE:
+
+@app.get("/simulate/stream")
+async def simulate_stream():
+    """
+    Stream de Server-Sent Events (SSE) con progreso en tiempo real.
+
+    Cliente (JavaScript/C#):
+        const eventSource = new EventSource("http://localhost:8000/simulate/stream");
+        eventSource.addEventListener("message", (e) => {
+            const line = JSON.parse(e.data);
+            console.log("Progreso:", line);
+        });
+
+    Cliente (Python - para testing):
+        import requests
+        resp = requests.get("http://localhost:8000/simulate/stream", stream=True)
+        for line in resp.iter_lines():
+            if line:
+                print(line.decode())
+    """
+
+    async def event_generator():
+        """
+        Lee eventos de la cola de progreso y los emite como SSE.
+        """
+        # Timeout para no bloquear infinitamente si no hay eventos
+        timeout_secs = 0.5
+
+        while True:
+            try:
+                # Intenta obtener un evento de la cola (no bloqueante)
+                event = _progress_queue.get(timeout=timeout_secs)
+                # Emite como SSE: "data: {json}\n\n"
+                yield f"data: {json.dumps(event)}\n\n"
+
+            except queue.Empty:
+                # No hay eventos todavía, envía un comentario (keep-alive)
+                yield f": keep-alive\n\n"
+                await asyncio.sleep(0.1)
+
+            except GeneratorExit:
+                # Cliente se desconectó
+                break
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Desactiva buffering en nginx/proxies
+        }
+    )
+
+
+# ============================================================================
+# TESTING
+# ============================================================================
+
+# Prueba 1: terminal/bash
+# -----------
+# curl --stream http://localhost:8000/simulate/stream
+# (debería ver líneas "data: {...}" mientras hay progreso)
+
+# Prueba 2: Python
+# ----------------
+# import requests
+# import json
+#
+# # En otra terminal, lanza una simulación:
+# # curl -X POST http://localhost:8000/simulate \
+# #   -H "Content-Type: application/json" \
+# #   -d '{"configuration": {"parameters": {"num_pulses": 1000, "num_runs": 5}}}'
+#
+# # En esta, abre el stream:
+# resp = requests.get("http://localhost:8000/simulate/stream", stream=True)
+# for line in resp.iter_lines():
+#     if line and not line.startswith(b":"):  # Ignora keep-alives
+#         data = line.decode().replace("data: ", "")
+#         try:
+#             event = json.loads(data)
+#             print(f"[{event.get('status')}] {event}")
+#         except:
+#             pass
+
+
+# ============================================================================
+# CHECKLIST
+# ============================================================================
+# [ ] Agrega imports (json, asyncio, queue)
+# [ ] Agrega variables globales (_progress_queue, _progress_callback)
+# [ ] Agrega función init_progress_system()
+# [ ] Agrega @app.on_event("startup") que llama init_progress_system()
+# [ ] Refactoriza @app.post("/simulate")
+# [ ] Agrega @app.get("/simulate/stream") con event_generator()
+# [ ] Prueba con curl --stream
+# [ ] Prueba con cliente Python
+# [ ] Push a rama semana-2/integracion-red
+#
+# Próximo paso: B2 (cliente Unity que conecta a SSE)
+
