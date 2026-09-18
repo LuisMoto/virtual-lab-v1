@@ -19,6 +19,13 @@ namespace VirtualLab.Networking
         // CONFIGURACIÓN
         // ====================================================================
 
+        [Tooltip(
+            "URL del backend FastAPI, sin barra final. 'localhost' solo " +
+            "funciona si el backend corre en ESTA misma máquina (Editor o " +
+            "Quest Link). Para el visor VR conectado por Wi-Fi (standalone), " +
+            "cambia esto a la IP LAN del equipo que corre el backend, p. ej. " +
+            "http://192.168.1.50:8000 -- esa IP aparece impresa en la consola " +
+            "al arrancar server.py. Ver Docs/02_Backend_Python.md §10.")]
         [SerializeField]
         private string backendUrl = "http://localhost:8000";
 
@@ -45,6 +52,47 @@ namespace VirtualLab.Networking
         /// cuerpo trae "status": "error" (así responde Backend/utils.build_error_response).
         /// </summary>
         public event Action<string> OnSimulationError;
+
+
+        // ====================================================================
+        // CICLO DE VIDA
+        // ====================================================================
+
+        private void Awake()
+        {
+            WarnIfBackendUrlLooksLocalOnDevice();
+        }
+
+        /// <summary>
+        /// En un build standalone de Android instalado en el propio visor
+        /// (Quest desconectado, sin cable), <c>Application.platform</c> es
+        /// <c>RuntimePlatform.Android</c> y "localhost" se refiere al visor
+        /// mismo -- jamás va a encontrar ahí un backend Python corriendo en
+        /// la PC. Este caso es fácil de dejar pasar sin darse cuenta (compila
+        /// y corre perfecto en el Editor, donde "localhost" sí es válido) y
+        /// falla en silencio (o con un error de red poco claro) ya instalado
+        /// en el visor. Si en cambio Unity corre en el Editor o vía Quest
+        /// Link/Air Link, <c>Application.platform</c> es el del PC (no
+        /// Android) -- ahí "localhost" sigue siendo válido y esta advertencia
+        /// no aplica. Solo loguea (Debug.LogWarning); no bloquea nada.
+        /// </summary>
+        private void WarnIfBackendUrlLooksLocalOnDevice()
+        {
+            bool isStandaloneAndroidBuild = Application.platform == RuntimePlatform.Android && !Application.isEditor;
+            bool looksLocal = backendUrl.Contains("localhost") || backendUrl.Contains("127.0.0.1");
+
+            if (isStandaloneAndroidBuild && looksLocal)
+            {
+                Debug.LogWarning(
+                    "[SimulationClient] backendUrl sigue apuntando a "
+                    + backendUrl
+                    + " en un build standalone de Android -- 'localhost' aquí es "
+                    + "el visor mismo, no va a encontrar el backend. Cambia "
+                    + "backendUrl a la IP LAN de la máquina que corre server.py "
+                    + "(aparece impresa en su consola al arrancar). Ver "
+                    + "Docs/02_Backend_Python.md §10.");
+            }
+        }
 
 
         // ====================================================================

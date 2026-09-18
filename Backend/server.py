@@ -30,7 +30,13 @@ el progreso si en el futuro llegan a correr simulaciones concurrentes.
 
 Para correr localmente (una vez instaladas las dependencias de requirements.txt):
 
-    uvicorn server:app --reload
+    uvicorn server:app --host 0.0.0.0 --reload
+
+``--host 0.0.0.0`` (no el default de uvicorn, que es ``127.0.0.1``) es lo que
+permite que el visor VR llegue a este backend por Wi-Fi -- ver "visor
+inalámbrico" en Docs/04_Plan_Maestro_Migracion.md y Docs/02_Backend_Python.md
+§8/§11. Si solo vas a probar desde la misma máquina (curl, Editor de Unity
+en Play Mode), ``127.0.0.1``/``localhost`` sigue funcionando igual.
 """
 
 from __future__ import annotations
@@ -38,6 +44,7 @@ from __future__ import annotations
 import asyncio
 import json
 import queue
+import socket
 from typing import AsyncGenerator, Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -140,9 +147,52 @@ def _drain_progress_queue() -> None:
             break
 
 
+def _get_lan_ip() -> Optional[str]:
+    """Intenta averiguar la IP de este equipo dentro de la red local (no
+    127.0.0.1) -- es la que hay que poner en ``backendUrl``
+    (SimulationClient / SSEStreamReader, Inspector de Unity) para que el
+    visor VR llegue por Wi-Fi.
+
+    El truco: un socket UDP "conectado" a una IP externa nunca manda un
+    paquete de verdad (UDP no hace handshake) -- solo le pide al sistema
+    operativo qué interfaz/IP local usaría para llegar ahí. Funciona sin
+    conectividad real a 8.8.8.8, mientras exista alguna ruta por default
+    (cualquier red con router/gateway la tiene, aunque no tenga salida a
+    internet). Devuelve None si no se pudo determinar (sin red en absoluto).
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
+def _print_lan_banner() -> None:
+    """Ayuda de arranque para el objetivo de "visor inalámbrico": imprime la
+    URL exacta a usar en Unity, en vez de que Luis tenga que buscar la IP a
+    mano con ipconfig/ifconfig cada vez que cambia de red."""
+    lan_ip = _get_lan_ip()
+    print("=" * 70)
+    if lan_ip:
+        print(f"  Backend accesible en tu red local en: http://{lan_ip}:8000")
+        print("  -> Usa esa URL en 'backendUrl' (SimulationClient y")
+        print("     SSEStreamReader, Inspector de Unity) para conectar el")
+        print("     visor VR por Wi-Fi.")
+    else:
+        print("  No se pudo determinar la IP local automáticamente.")
+        print("  Busca la IP de este equipo a mano (ipconfig / ifconfig) y")
+        print("  úsala como http://<esa-IP>:8000 en 'backendUrl' en Unity.")
+    print("  'http://localhost:8000' solo funciona si Unity corre en ESTA")
+    print("  misma máquina (Editor o Quest Link) -- no desde un visor")
+    print("  standalone conectado solo por Wi-Fi.")
+    print("=" * 70)
+
+
 @app.on_event("startup")
 def _on_startup() -> None:
     init_progress_system()
+    _print_lan_banner()
 
 
 # ---------------------------------------------------------------------------
@@ -233,4 +283,9 @@ async def stream_simulation_progress() -> StreamingResponse:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
+    # host="0.0.0.0" (no "127.0.0.1"): necesario para que el visor VR llegue
+    # por Wi-Fi -- ver "visor inalámbrico" en Docs/04_Plan_Maestro_Migracion.md.
+    # "127.0.0.1" solo acepta conexiones que salen del propio equipo, así que
+    # con eso el visor jamás podría conectarse aunque estuviera en la misma
+    # red -- este bug exacto es el que tenía este bloque hasta esta revisión.
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

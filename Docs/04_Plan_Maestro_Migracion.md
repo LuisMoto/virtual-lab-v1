@@ -104,6 +104,17 @@ División de trabajo detallada en `SEMANA_2_ENTREGABLES.md` (Pista A = Backend/P
 
 **Bloqueos de infraestructura pendientes, no de código** (ver detalle en `02_Backend_Python.md` §9 y comentario de A3 arriba): el entorno donde se implementó todo esto tiene salida de red bloqueada hacia `github.com` (impide `git push`) y `pypi.org` (impide `pip install fastapi/uvicorn`, y por lo tanto tanto levantar `server.py` como construir la imagen Docker). Ambos son pasos de segundos desde una máquina normal — no representan trabajo pendiente de diseño o código, solo verificación en vivo que falta correr una vez.
 
+**Hardening adicional post-cierre (2026-09-17, misma fecha, tras committear Pista A)**: al preguntarse explícitamente si el escenario "visor inalámbrico" ya funcionaba con Pista A + Pista B completas, se encontró que no del todo — "cada pista completa" no garantizaba que el visor Quest standalone pudiera de verdad hablarle al backend por Wi-Fi. Se corrigieron dos problemas independientes que ninguna de las dos pistas había cubierto, y se agregaron dos ayudas de diagnóstico:
+
+| Problema/ayuda | Estado | Dónde |
+|---|---|---|
+| `server.py` fuera de Docker seguía en `host="127.0.0.1"` (loopback) en su bloque `__main__`, aunque el `CMD` de Docker ya usaba `0.0.0.0` | Corregido | `Backend/server.py` — ver `02_Backend_Python.md` §10.1. |
+| Sin forma rápida de saber la IP LAN a poner en `backendUrl` | Agregado | `Backend/server.py::_get_lan_ip()`/`_print_lan_banner()` — banner al arrancar. Ver `02_Backend_Python.md` §10.2. |
+| Android (API 28+) bloquea HTTP sin cifrar por default — habría fallado ya instalado en el visor, sin fallar ni en Editor ni por Quest Link | Corregido | `Assets/Plugins/Android/AndroidManifest.xml` (nuevo) + `ProjectSettings.asset` (`useCustomMainManifest: 1`). Ver `02_Backend_Python.md` §10.3. |
+| Sin aviso si `backendUrl` queda en `localhost` dentro de un build standalone ya instalado | Agregado | `Assets/Scripts/Networking/SimulationClient.cs` y `SSEStreamReader.cs` — `Debug.LogWarning` en `Awake()`, solo en build Android real (no Editor, no Quest Link). Ver `02_Backend_Python.md` §10.4. |
+
+Checklist físico restante (no es código, ver `02_Backend_Python.md` §10.5 para el detalle completo): confirmar misma red Wi-Fi sin aislamiento de clientes, aceptar el aviso del Firewall de Windows la primera vez que corra el backend, leer la IP del banner nuevo, actualizarla en `backendUrl` (ambos componentes, ambas escenas) y reconstruir/reinstalar el APK en el Quest — el fix de Android solo aplica a un build nuevo, no a uno ya instalado.
+
 ### Semanas 3–10 — No iniciadas
 
 Sin cambios sobre el plan original todavía. Se actualizará esta sección al cierre de cada semana.

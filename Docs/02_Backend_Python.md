@@ -2,7 +2,7 @@
 
 **Fecha de auditoría**: 2026-09-17 · **Rama**: `semana-2/integracion-red`
 
-> Actualiza la auditoría del 2026-08-26 (rama `MVP_escenas`, antes de que existiera `server.py`). Lo de esa fecha sobre `main.py`/`utils.py`/`simulator.py`/`wave_simulator.py` en modo CLI sigue vigente — `main.py` no cambió — y se conserva abajo con las notas mínimas necesarias. Lo nuevo es todo lo de la Semana 2 del Plan Maestro, Pista A completa (A1–A4): el callback de progreso en `simulator.py`/`utils.py`, el servidor FastAPI real (`server.py`, incluyendo `GET /simulate/stream` ya no como borrador), y la Dockerización.
+> Actualiza la auditoría del 2026-08-26 (rama `MVP_escenas`, antes de que existiera `server.py`). Lo de esa fecha sobre `main.py`/`utils.py`/`simulator.py`/`wave_simulator.py` en modo CLI sigue vigente — `main.py` no cambió — y se conserva abajo con las notas mínimas necesarias. Lo nuevo es todo lo de la Semana 2 del Plan Maestro, Pista A completa (A1–A4): el callback de progreso en `simulator.py`/`utils.py`, el servidor FastAPI real (`server.py`, incluyendo `GET /simulate/stream` ya no como borrador), y la Dockerización. Se agrega además, en esta misma fecha y ya con Pista A y Pista B committeadas, una pasada de *hardening* para que el escenario "visor inalámbrico" funcione de punta a punta y no solo "por partes" (§10) — motivada directamente por la pregunta de si ya estaba listo lo del Wi-Fi.
 
 ---
 
@@ -14,7 +14,7 @@ Backend/
 ├── utils.py                         (133 líneas — I/O compartido, validación, progreso + cola thread-safe)
 ├── simulator.py                     (319 líneas — experimento Grangier/HWP + callback de progreso)
 ├── wave_simulator.py                (47 líneas — experimento Wave Interference, sin cambios)
-├── server.py                        (236 líneas — API FastAPI: POST /simulate + GET /simulate/stream real)
+├── server.py                        (292 líneas — API FastAPI: POST /simulate + GET /simulate/stream real + banner de IP LAN, §10)
 ├── requirements.txt                 (fastapi, uvicorn[standard])
 ├── Dockerfile                       (contenerización del backend, Fase 1.5)
 ├── .dockerignore
@@ -138,7 +138,7 @@ docker run --rm -p 8000:8000 virtual-lab-backend
 docker compose up --build
 ```
 
-**Conexión con el objetivo de "visor inalámbrico"**: una vez el contenedor corre en una máquina de la red local, cualquier dispositivo en la misma red Wi-Fi puede llegar a `http://<IP-local-de-esa-máquina>:8000` — incluido el visor VR. El único cambio pendiente del lado de Unity es actualizar el campo `backendUrl` de `SimulationClient`/`SSEStreamReader` (hoy `http://localhost:8000` en `Scene_DosDet.unity`/`Scene_TresDet.unity`) a esa IP; no hace falta tocar ningún script — ambos componentes ya exponen `backendUrl` como campo serializado editable desde el Inspector. `localhost` solo seguiría funcionando si el propio visor corriera el contenedor, que no es el caso de un visor standalone conectado por Wi-Fi a una PC.
+**Conexión con el objetivo de "visor inalámbrico"**: una vez el contenedor corre en una máquina de la red local, cualquier dispositivo en la misma red Wi-Fi puede llegar a `http://<IP-local-de-esa-máquina>:8000` — incluido el visor VR. El cambio del lado de Unity es actualizar el campo `backendUrl` de `SimulationClient`/`SSEStreamReader` (hoy `http://localhost:8000` en `Scene_DosDet.unity`/`Scene_TresDet.unity`) a esa IP; no hace falta tocar ningún script para eso — ambos componentes ya exponen `backendUrl` como campo serializado editable desde el Inspector. `localhost` solo seguiría funcionando si el propio visor corriera el contenedor, que no es el caso de un visor standalone conectado por Wi-Fi a una PC. **Esto no basta por sí solo para que el visor ya instalado (standalone) funcione** — ver §10 para el resto (bloqueo de HTTP sin cifrar en Android, y un bug independiente en cómo arrancaba `server.py` fuera de Docker).
 
 ## 9. Estado de las pruebas (A4, Semana 2)
 
@@ -158,7 +158,7 @@ cd Backend
 pip install -r requirements.txt
 
 # 2. Levantar el servidor
-uvicorn server:app --reload
+uvicorn server:app --host 0.0.0.0 --reload
 
 # 3. En otra terminal: disparar una simulación
 curl -X POST http://127.0.0.1:8000/simulate \
@@ -171,9 +171,48 @@ curl -N http://127.0.0.1:8000/simulate/stream
 
 Con el paso 4 corriendo, se debería ver aparecer en vivo cada línea `data: {...}` a medida que el paso 3 avanza, terminando en `data: {"type": "end", "status": "ok", ...}`. Si en cambio todo llega de golpe al final, revisar que ningún proxy intermedio esté bufferizando (ver headers en §5.2). Este mismo comando de Docker (§8) es una alternativa equivalente a los pasos 1-2.
 
-## 10. Ver también
+## 10. Visor inalámbrico (Wi-Fi) — hardening final (Semana 2, cierre)
+
+Pista A (A1–A4) y Pista B (B1–B4) quedaron completas y committeadas por separado (`386025c` sobre `a5e9b2e`, ambas en `semana-2/integracion-red`), pero "cada pista completa" no es lo mismo que "el escenario inalámbrico funciona de punta a punta" — al auditar específicamente ese escenario (visor Quest standalone, sin cable, conectado solo por Wi-Fi al backend) aparecieron dos problemas independientes que ninguna de las dos pistas cubría, más un par de ayudas de diagnóstico. Ninguno requirió rediseño — son correcciones puntuales — pero sin ellas el escenario inalámbrico habría fallado en la práctica pese a que "todo el código ya estaba".
+
+### 10.1 Bug: `server.py` seguía atado a loopback fuera de Docker
+
+El `CMD` de `Backend/Dockerfile` (§8) ya usaba `--host 0.0.0.0` correctamente. Pero el bloque `if __name__ == "__main__":` al final de `server.py` — el que se ejecuta con `python server.py` directo, sin Docker — todavía tenía `uvicorn.run("server:app", host="127.0.0.1", port=8000, ...)`. `127.0.0.1` solo acepta conexiones que se originan en el propio equipo: con ese host, el visor jamás podría conectarse por Wi-Fi aunque estuviera en la misma red, sin importar qué tan bien estuviera todo lo demás. Corregido a `host="0.0.0.0"`. La recomendación de `uvicorn server:app --reload` (documentada arriba en §9 y en el docstring de `server.py`) tenía el mismo problema — `--host 0.0.0.0` no era el default de uvicorn — y también se corrigió.
+
+### 10.2 Ayuda nueva: banner de IP LAN al arrancar
+
+`server.py` ahora imprime, en `@app.on_event("startup")`, la IP de red local del equipo (vía `_get_lan_ip()` — truco estándar de `socket` UDP "conectado" a una IP externa, que no manda tráfico real, solo le pregunta al sistema operativo qué interfaz usaría) y la URL completa a poner en `backendUrl`. Antes había que buscar esa IP a mano con `ipconfig`/`ifconfig` cada vez que cambiaba de red — ahora aparece directo en la consola al levantar el servidor.
+
+### 10.3 Bug: Android bloquea HTTP sin cifrar desde API 28 (Android 9+)
+
+Este es el que más fácil se pasa por alto: desde Android 9, el sistema **bloquea por default** cualquier tráfico HTTP sin cifrar de una app — y `server.py` corre en `http://`, no `https://` (correcto para una red local de confianza, pero Android no lo sabe). `AndroidTargetSdkVersion` en este proyecto está en "Automatic" (`ProjectSettings.asset`), que hoy resuelve muy por encima de 28. Esta política **no aplica** en el Editor de Unity, y **tampoco** aplica corriendo por Quest Link/Air Link (en ambos casos, `Application.platform` reporta el sistema operativo de la PC, no Android, porque ahí es donde realmente se ejecuta la app) — por eso es fácil no detectarlo probando de esas dos formas y que solo aparezca ya con el visor standalone. El síntoma sería un error de red poco claro en el visor ("CLEARTEXT communication not permitted" en el log de Android), sin relación obvia con la causa real.
+
+Arreglado con dos piezas, **ambas necesarias** (una sin la otra no alcanza):
+
+1. `Assets/Plugins/Android/AndroidManifest.xml` (nuevo) — fragmento de manifest con `android:usesCleartextTraffic="true"` (además del permiso `INTERNET`). Unity lo fusiona vía el manifest merger de Gradle con el manifest que genera automáticamente y con los de los paquetes XR/Oculus/OpenXR (esos viven aparte, en `Library/PackageCache`, y no se tocan).
+2. `ProjectSettings/ProjectSettings.asset` → `useCustomMainManifest: 1` (antes `0`) — Player Settings > Android > Publishing Settings > "Custom Main Manifest". **Sin este flag, Unity ignora el archivo del punto 1 en silencio** — es la parte fácil de olvidar que habría dejado el fix anterior sin efecto.
+
+`usesCleartextTraffic="true"` es deliberadamente amplio (cualquier host por HTTP, no solo la IP del backend) porque esa IP no es fija en tiempo de build — depende de en qué máquina/red se levante `server.py` cada vez (ver §10.2). Aceptable para un simulador de laboratorio en red local de confianza; si esto se expusiera fuera de una red confiable, lo correcto sería servir el backend por HTTPS en vez de mantener este permiso abierto. Se evaluó y **se descartó a propósito** agregar CORS a `server.py`: CORS es una restricción del navegador y solo aplicaría a un build WebGL — este proyecto usa `UnityWebRequest` nativo sobre Android/OpenXR (Editor, Quest Link o standalone), que no pasa por el sandbox de un navegador y no está sujeto a CORS. Agregarlo habría sido complejidad sin ningún problema real que resolver.
+
+### 10.4 Diagnóstico nuevo: aviso si `backendUrl` sigue en localhost dentro del visor
+
+`SimulationClient.cs` y `SSEStreamReader.cs` ahora revisan en `Awake()` si `Application.platform == RuntimePlatform.Android && !Application.isEditor` (es decir: build standalone real, instalado en el visor — no Editor, no Quest Link/Air Link, que reportan el SO de la PC) y si `backendUrl` todavía contiene `localhost`/`127.0.0.1`. Si ambas cosas son ciertas, loguean un `Debug.LogWarning` explicando que en el visor standalone "localhost" es el visor mismo, no la PC que corre el backend. Es un error fácil de cometer (compila y corre perfecto en el Editor, donde "localhost" sí es válido) y que antes fallaba en silencio o con un error de red poco claro ya instalado en el visor; ahora al menos queda un mensaje claro en los logs de Android (`adb logcat` o la consola de Meta Quest Developer Hub).
+
+### 10.5 Checklist físico — lo que sigue siendo trabajo manual de Luis
+
+Todo lo de arriba (§10.1–§10.4) ya está en el código, committeado. Lo que **no se puede hacer desde este entorno** (sin LAN real, sin el visor físico, sin un Editor de Unity con GUI) y queda como pasos manuales, en orden:
+
+1. **Misma red Wi-Fi**: confirmar que la PC que va a correr `server.py` y el Quest están en la misma red Wi-Fi. Ojo con routers que tienen "aislamiento de clientes"/"AP isolation" (común en redes de invitados u oficinas): con eso activado, dos dispositivos en el mismo Wi-Fi no pueden verse entre sí aunque tengan internet cada uno — si los pasos siguientes no funcionan y todo lo demás parece correcto, es lo primero a revisar en la configuración del router.
+2. **Firewall de Windows** (si el backend corre en una PC con Windows): la primera vez que corra `uvicorn`/`python server.py`, Windows puede mostrar un aviso de "Firewall de Windows Defender" preguntando si permitir el acceso — hay que aceptarlo (redes privadas al menos) para que el puerto 8000 acepte conexiones entrantes desde el Quest. Si ese aviso no aparece o se rechazó por error, el Quest se quedará sin poder conectar sin ningún mensaje claro del lado de Unity.
+3. **Levantar el backend y leer el banner**: correr `uvicorn server:app --host 0.0.0.0 --reload` (o `docker compose up --build`, §8) y anotar la IP que imprime el banner nuevo (§10.2) — algo como `http://192.168.1.50:8000`.
+4. **Actualizar `backendUrl` en Unity**: en el Inspector, sobre el GameObject que tiene `SimulationClient` y `SSEStreamReader` (en ambas escenas, `Scene_DosDet.unity` y `Scene_TresDet.unity`), cambiar el campo `backendUrl` de ambos componentes de `http://localhost:8000` a la URL del paso 3. Deben coincidir entre sí.
+5. **Reconstruir y reinstalar el APK en el Quest**: el fix de `AndroidManifest.xml`/`useCustomMainManifest` (§10.3) solo toma efecto en un build nuevo — no en un APK ya instalado. Hace falta abrir el proyecto en el Editor de Unity (2022.3.62f3), File > Build Settings > Android > Build (o Build and Run con el Quest conectado por USB/ADB), y reinstalar. Si el Quest ya tiene una versión instalada de antes de este fix, esa versión seguirá bloqueando el tráfico HTTP aunque el resto de la red esté bien configurada.
+
+Ningún paso de esta lista es de diseño ni de código — son verificación/ejecución de una sola vez. Si después de los 5 pasos algo sigue sin conectar, lo más probable es el paso 1 (aislamiento de clientes del router) o un error de tipeo en la IP del paso 4.
+
+## 11. Ver también
 
 - `00_Overview_Arquitectura.md` §2 — ciclo de vida completo de una corrida (Unity ↔ Python).
 - `01_Frontend_Unity.md` §2 — cómo consume Unity estas mismas líneas de progreso y el `output.json`.
 - `03_Cumplimiento_y_Brechas.md` — brecha entre esta arquitectura y la descrita en la Guía de Estándares. **Nota**: no se auditó en esta pasada; puede estar desactualizado respecto a lo de Semana 2 documentado aquí.
-- `04_Plan_Maestro_Migracion.md` §5 (Fase 1) — entregables 1.3 (FastAPI+SSE) y 1.5 (Docker), documentados aquí ya como completos, no como pendientes.
+- `04_Plan_Maestro_Migracion.md` §5 (Fase 1) — entregables 1.3 (FastAPI+SSE) y 1.5 (Docker), documentados aquí ya como completos, no como pendientes; incluye también la pasada de hardening de §10.

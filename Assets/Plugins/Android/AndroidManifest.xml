@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AndroidManifest.xml — fragmento de manifest para Android/Quest.
+  Objetivo "visor inalámbrico" (Docs/04_Plan_Maestro_Migracion.md), pieza
+  final tras completar Pista A (backend) y Pista B (Unity) de la Semana 2.
+
+  Unity fusiona este archivo (vía el manifest merger de Gradle) con el
+  manifest que genera automáticamente para el Player y con los manifests de
+  los paquetes XR/Oculus/OpenXR ya instalados (esos viven en
+  Library/PackageCache, como "androidlib" separados; este archivo no los
+  toca ni los reemplaza, solo agrega lo de abajo). Para que Unity lo tome en
+  cuenta hace falta además "useCustomMainManifest: 1" en
+  ProjectSettings/ProjectSettings.asset (Player Settings > Android >
+  Publishing Settings > Custom Main Manifest) — se activó junto con este
+  archivo; visible en el Inspector como el checkbox ya marcado.
+
+  Por qué hace falta: desde Android 9 (API 28), el sistema bloquea por
+  default cualquier tráfico HTTP sin cifrar. Backend/server.py corre en
+  http:// (no https://) porque vive en la red local de confianza del
+  laboratorio, no en internet público. AndroidTargetSdkVersion en este
+  proyecto está en "Automatic" (ProjectSettings.asset), que hoy resuelve muy
+  por encima de 28 — sin este permiso, UnityWebRequest fallaría en el visor
+  ya instalado (aunque funcione perfecto en el Editor, donde esta política
+  de Android no aplica) con "CLEARTEXT communication not permitted" en el
+  log, un error fácil de no relacionar con la causa real. Ver
+  Docs/02_Backend_Python.md §10.
+
+  usesCleartextTraffic="true" es deliberadamente amplio (permite HTTP sin
+  cifrar hacia cualquier host, no solo la IP del backend) porque esa IP
+  cambia según en qué máquina/red se levante el backend — no es fija en
+  tiempo de build. Aceptable para un simulador de laboratorio en red local
+  de confianza. Si en una fase futura esto se expusiera fuera de una red
+  confiable, lo correcto sería servir el backend por HTTPS en vez de
+  mantener este permiso abierto.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application android:usesCleartextTraffic="true" />
+</manifest>

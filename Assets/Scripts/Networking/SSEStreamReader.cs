@@ -31,6 +31,12 @@ namespace VirtualLab.Networking
         // CONFIGURACIÓN
         // ====================================================================
 
+        [Tooltip(
+            "URL del backend FastAPI, sin barra final. Debe coincidir con el " +
+            "backendUrl de SimulationClient en el mismo GameObject. 'localhost' " +
+            "solo funciona si el backend corre en ESTA misma máquina (Editor o " +
+            "Quest Link); para el visor conectado por Wi-Fi (standalone), usa " +
+            "la IP LAN del equipo que corre server.py. Ver Docs/02_Backend_Python.md §10.")]
         [SerializeField]
         private string backendUrl = "http://localhost:8000";
 
@@ -44,6 +50,40 @@ namespace VirtualLab.Networking
 
         public event Action OnStreamConnected;
         public event Action<string> OnStreamError;
+
+
+        // ====================================================================
+        // CICLO DE VIDA
+        // ====================================================================
+
+        private void Awake()
+        {
+            WarnIfBackendUrlLooksLocalOnDevice();
+        }
+
+        /// <summary>
+        /// Mismo chequeo que <c>SimulationClient.WarnIfBackendUrlLooksLocalOnDevice</c>
+        /// -- ver su comentario para el detalle completo de por qué solo aplica
+        /// a un build standalone de Android (no al Editor ni a Quest Link/Air
+        /// Link, que corren como el PC, no como Android).
+        /// </summary>
+        private void WarnIfBackendUrlLooksLocalOnDevice()
+        {
+            bool isStandaloneAndroidBuild = Application.platform == RuntimePlatform.Android && !Application.isEditor;
+            bool looksLocal = backendUrl.Contains("localhost") || backendUrl.Contains("127.0.0.1");
+
+            if (isStandaloneAndroidBuild && looksLocal)
+            {
+                Debug.LogWarning(
+                    "[SSEStreamReader] backendUrl sigue apuntando a "
+                    + backendUrl
+                    + " en un build standalone de Android -- 'localhost' aquí es "
+                    + "el visor mismo, no va a encontrar el backend. Cambia "
+                    + "backendUrl a la IP LAN de la máquina que corre server.py "
+                    + "(aparece impresa en su consola al arrancar). Ver "
+                    + "Docs/02_Backend_Python.md §10.");
+            }
+        }
 
 
         // ====================================================================
