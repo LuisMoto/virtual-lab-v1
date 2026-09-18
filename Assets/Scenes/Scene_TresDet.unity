@@ -2428,6 +2428,8 @@ GameObject:
   - component: {fileID: 1105349207}
   - component: {fileID: 1105349205}
   - component: {fileID: 1105349204}
+  - component: {fileID: 803171048}
+  - component: {fileID: 908511760}
   m_Layer: 0
   m_Name: GestorSimulacion
   m_TagString: Untagged
@@ -2472,6 +2474,10 @@ MonoBehaviour:
   rutaPython: python
   nombreScriptPython: main.py
   experimento: 0
+  simulationClient: {fileID: 803171048}
+  sseStreamReader: {fileID: 908511760}
+  numPulses: 2000
+  numRuns: 5
   OnSimulacionCompletada:
     m_PersistentCalls:
       m_Calls:
@@ -5192,3 +5198,30 @@ SceneRoots:
   - {fileID: 1105349207}
   - {fileID: 18766121}
   - {fileID: 1027870578}
+--- !u!114 &803171048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1105349203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f46029ac5fbd48a48ad9137bc4ddc6a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backendUrl: http://localhost:8000
+  requestTimeoutSecs: 300
+--- !u!114 &908511760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1105349203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a572c22de88e440290e4272bae0430b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backendUrl: http://localhost:8000

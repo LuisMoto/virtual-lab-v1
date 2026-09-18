@@ -1,18 +1,24 @@
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
-using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using VirtualLab.Networking;
 
 public class SimulationControllerVR : MonoBehaviour
 {
-    [Header("Python connection")]
-    [FormerlySerializedAs("rutaPython")]
-    [SerializeField] private string pythonPath = "python";
-    [FormerlySerializedAs("nombreScriptPython")]
-    [SerializeField] private string pythonScriptName = "main.py";
+    [Header("Backend connection")]
+    [SerializeField] private SimulationClient simulationClient;
+    [SerializeField] private SSEStreamReader sseStreamReader;
+
+    [Header("Simulation parameters")]
+    // Valores por defecto = mismos defaults que Backend/simulator.py::validate_params().
+    // POST /simulate (Backend/server.py::SimulationParameters) los exige explícitamente
+    // (no tienen default en el Pydantic model), así que ya no pueden quedar implícitos
+    // como antes con input.json ausente. Esto cubre, de forma mínima, el entregable
+    // "Generación Dinámica de Parámetros" del Plan Maestro (Fase 1.2): quedan en memoria,
+    // editables desde el Inspector, sin volver a escribir input.json.
+    [SerializeField] private int numPulses = 2000;
+    [SerializeField] private int numRuns = 5;
 
     /// <summary>
     /// Optical experiment implemented by a Python module under Backend/.
@@ -42,95 +48,103 @@ public class SimulationControllerVR : MonoBehaviour
         { ExperimentType.WaveInterference, "wave_interference" }
     };
 
-    private volatile string _latestProgressLine = null;
+    private void Awake()
+    {
+        if (simulationClient == null)
+            simulationClient = GetComponent<SimulationClient>();
+        if (sseStreamReader == null)
+            sseStreamReader = GetComponent<SSEStreamReader>();
+
+        if (simulationClient != null)
+        {
+            simulationClient.OnSimulationStart += HandleClientStart;
+            simulationClient.OnSimulationComplete += HandleClientComplete;
+            simulationClient.OnSimulationError += HandleClientError;
+        }
+
+        if (sseStreamReader != null)
+        {
+            sseStreamReader.OnProgressLine += HandleStreamProgressLine;
+            sseStreamReader.OnStreamError += HandleStreamError;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (simulationClient != null)
+        {
+            simulationClient.OnSimulationStart -= HandleClientStart;
+            simulationClient.OnSimulationComplete -= HandleClientComplete;
+            simulationClient.OnSimulationError -= HandleClientError;
+        }
+
+        if (sseStreamReader != null)
+        {
+            sseStreamReader.OnProgressLine -= HandleStreamProgressLine;
+            sseStreamReader.OnStreamError -= HandleStreamError;
+            sseStreamReader.StopListening();
+        }
+    }
 
     /// <summary>
-    /// Launches the configured experiment as a Python subprocess and streams its progress.
+    /// Launches the configured experiment against the backend (POST /simulate)
+    /// and opens the SSE stream (GET /simulate/stream) to receive live progress.
     /// </summary>
     public void RunGrangierSimulation()
     {
-        UnityEngine.Debug.Log($"Starting simulation '{ExperimentMap[experiment]}' in Python...");
-        StartCoroutine(RunPythonProcess());
+        if (simulationClient == null || sseStreamReader == null)
+        {
+            string message = "Faltan componentes de red (SimulationClient / SSEStreamReader) en este GameObject.";
+            UnityEngine.Debug.LogError($"[SimulationControllerVR] {message}");
+            OnSimulationError?.Invoke(message);
+            return;
+        }
+
+        string experimentName = ExperimentMap[experiment];
+        UnityEngine.Debug.Log($"Starting simulation '{experimentName}' via backend...");
+
+        string parametersJson = $"{{\"num_pulses\": {numPulses}, \"num_runs\": {numRuns}}}";
+
+        // Se abre el stream antes del POST para no perder progreso temprano.
+        // (En la práctica, el servidor mantiene la cola de progreso desde el
+        // startup, independientemente de cuándo se conecte un cliente GET, así
+        // que el orden exacto no es crítico — pero conectar primero da
+        // feedback visual inmediato de "conectado" antes de lanzar la corrida.)
+        sseStreamReader.StartListening();
+        simulationClient.StartSimulation(parametersJson, experimentName);
     }
 
-    private IEnumerator RunPythonProcess()
+    private void HandleClientStart(string message)
     {
-        string scriptPath = Path.Combine(Application.dataPath, "../Backend/", pythonScriptName);
+        UnityEngine.Debug.Log($"[SimulationControllerVR] {message}");
+    }
 
-        ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = pythonPath;
-        startInfo.Arguments = $"\"{scriptPath}\" {ExperimentMap[experiment]}";
-        startInfo.WorkingDirectory = Path.GetDirectoryName(scriptPath);
-        startInfo.UseShellExecute = false;
-        startInfo.CreateNoWindow = true;
-        startInfo.RedirectStandardOutput = true;
-        startInfo.RedirectStandardError = true;
+    private void HandleClientComplete(string responseJson)
+    {
+        sseStreamReader.StopListening();
+        UnityEngine.Debug.Log("Simulation finished cleanly. Updating final state...");
+        OnSimulationCompleted?.Invoke();
+    }
 
-        Process process = new Process();
-        process.StartInfo = startInfo;
+    private void HandleClientError(string errorMessage)
+    {
+        sseStreamReader.StopListening();
+        UnityEngine.Debug.LogError($"Backend reported an error:\n{errorMessage}");
+        OnSimulationError?.Invoke(errorMessage);
+    }
 
-        process.OutputDataReceived += (sender, args) =>
-        {
-            if (!string.IsNullOrEmpty(args.Data))
-                _latestProgressLine = args.Data;
-        };
+    private void HandleStreamProgressLine(string jsonLine)
+    {
+        ProcessProgressLine(jsonLine);
+    }
 
-        string pythonErrors = "";
-        process.ErrorDataReceived += (sender, args) =>
-        {
-            if (!string.IsNullOrEmpty(args.Data))
-                pythonErrors += args.Data + "\n";
-        };
-
-        try
-        {
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            UnityEngine.Debug.Log($"Python process launched successfully, PID: {process.Id}");
-        }
-        catch (System.Exception e)
-        {
-            string launchMessage = $"No se pudo lanzar Python. Verifica 'pythonPath' en el Inspector. Detalle: {e.Message}";
-            UnityEngine.Debug.LogError(launchMessage);
-            OnSimulationError?.Invoke(launchMessage);
-            yield break;
-        }
-
-        while (!process.HasExited)
-        {
-            string line = _latestProgressLine;
-            if (line != null)
-            {
-                _latestProgressLine = null;
-                ProcessProgressLine(line);
-            }
-            yield return null;
-        }
-
-        string finalLine = _latestProgressLine;
-        if (finalLine != null)
-        {
-            _latestProgressLine = null;
-            ProcessProgressLine(finalLine);
-        }
-
-        bool hadError = !string.IsNullOrEmpty(pythonErrors) || process.ExitCode != 0;
-
-        if (hadError)
-        {
-            string errorMessage = !string.IsNullOrEmpty(pythonErrors)
-                ? pythonErrors
-                : $"Python terminó con código de salida {process.ExitCode}. Revisa output.json para el detalle.";
-
-            UnityEngine.Debug.LogError($"Python ran but reported an internal error:\n{errorMessage}");
-            OnSimulationError?.Invoke(errorMessage);
-        }
-        else
-        {
-            UnityEngine.Debug.Log("Simulation finished cleanly. Updating final state...");
-            OnSimulationCompleted?.Invoke();
-        }
+    private void HandleStreamError(string errorMessage)
+    {
+        // No fatal: el POST puede seguir completándose aunque el stream de
+        // progreso falle o no esté disponible todavía (p. ej. mientras
+        // GET /simulate/stream sigue en borrador — ver A2 en
+        // SEMANA_2_ENTREGABLES.md). Solo se registra como advertencia.
+        UnityEngine.Debug.LogWarning($"[SimulationControllerVR] SSE stream error (progreso en vivo no disponible): {errorMessage}");
     }
 
     private void ProcessProgressLine(string line)
