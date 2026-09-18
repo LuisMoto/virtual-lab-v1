@@ -4,7 +4,8 @@ import sys
 import time
 import tempfile
 import datetime
-from typing import Any, Dict, Optional, Tuple
+import queue
+from typing import Any, Callable, Dict, Optional, Tuple
 
 BACKOFF_BASE_S = 0.05
 
@@ -105,3 +106,28 @@ def validate_float_range(value: Any, name: str, minimum: float = 0.0,
 
 def emit_progress(payload: Dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False), flush=True)
+
+def create_progress_queue() -> Tuple["queue.Queue", Callable[[Dict[str, Any]], None]]:
+    """
+    Crea una cola thread-safe para pasar progreso desde simulator.py (que
+    corre dentro de un hilo del threadpool de FastAPI cuando lo llama
+    Backend/server.py, ver POST /simulate) hacia el generador async que
+    atiende GET /simulate/stream.
+
+    queue.Queue es la elección correcta aquí porque ya es thread-safe por
+    diseño; asyncio.Queue no lo es cuando se escribe desde un hilo distinto
+    al del event loop (haría falta loop.call_soon_threadsafe en cada put,
+    que es justo la complejidad que queue.Queue evita).
+
+    Retorna:
+        (queue, callback) — registrar `callback` con
+        simulator.set_progress_callback(callback), y leer de `queue` desde
+        el generador SSE con queue.get(timeout=...) (idealmente sin bloquear
+        el event loop — ver Backend/server.py::_progress_stream()).
+    """
+    q: "queue.Queue" = queue.Queue()
+
+    def callback(payload: Dict[str, Any]) -> None:
+        q.put(payload)
+
+    return q, callback

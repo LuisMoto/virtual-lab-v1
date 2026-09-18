@@ -1,0 +1,18 @@
+# Backend/docker-compose.yml — atajo sobre Backend/Dockerfile (A3, Plan Maestro Semana 2).
+#
+# Un solo servicio porque el backend todavía no tiene dependencias propias
+# (sin base de datos, sin cache). Si Fase 2/3 del Plan Maestro llegan a
+# agregar alguna, este es el lugar natural para declararla como servicio
+# adicional en vez de crecer el `docker run` a mano.
+#
+# Uso:
+#   docker compose up --build
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    # Reinicio automático si el proceso muere — útil para dejarlo corriendo
+    # de fondo en la máquina que sirve al visor VR por Wi-Fi.
+    restart: unless-stopped

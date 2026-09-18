@@ -1,24 +1,32 @@
 """Backend/server.py — Fase 1.3 del Plan Maestro (Infraestructura de Red y Centralización).
 
-Borrador inicial de la API FastAPI que va a reemplazar gradualmente el flujo actual
-de subproceso + archivos (ver Backend/main.py). Por ahora **coexiste** con ese flujo:
-reutiliza los mismos módulos de física (simulator.py) y las mismas utilidades
-(utils.py) para no duplicar lógica ya validada durante la transición.
+API FastAPI que reemplaza gradualmente el flujo de subproceso + archivos (ver
+Backend/main.py, que sigue funcionando igual que siempre para uso por línea de
+comandos). Reutiliza los mismos módulos de física (simulator.py) y las mismas
+utilidades (utils.py) para no duplicar lógica ya validada durante la transición.
 
-Estado en esta entrega (Semana 1 del Plan Maestro):
+Estado en esta entrega (Semana 2 del Plan Maestro — Pista A completa):
 
-- ``POST /simulate``: endpoint funcional. Recibe los parámetros validados por
-  Pydantic (en vez de leerlos de ``input.json``) y devuelve el mismo sobre de
-  respuesta (``status``/``results``/``meta`` o ``status``/``message``/``details``)
-  que hoy produce ``main.py`` — es el equivalente síncrono del ciclo actual, pero
-  sin tocar disco para la entrada.
-- ``GET /simulate/stream``: **borrador** de ``StreamingResponse`` (SSE). Todavía
-  NO está conectado al progreso real que hoy emite ``simulator.py`` por stdout
-  (vía ``utils.emit_progress()``). Conectar esto correctamente implica que
-  ``simulator.py`` pueda alimentar una cola/callback en vez de solo imprimir a
-  stdout — eso es trabajo de la Semana 2. Este endpoint por ahora solo deja
-  documentada la forma del contrato SSE que Unity va a consumir vía
-  ``UnityWebRequest`` (Fase 1.4).
+- ``POST /simulate``: mismo contrato desde la Semana 1 (mismo sobre de
+  respuesta ``status``/``results``/``meta`` o ``status``/``message``/``details``
+  que produce ``main.py``). Ahora además vacía la cola de progreso compartida
+  antes de correr (ver ``_drain_progress_queue()``), para que progreso viejo
+  sin consumir no se mezcle con el de la corrida nueva.
+- ``GET /simulate/stream``: **implementación real** (ya no borrador). Lee la
+  cola de progreso que ``simulator.py`` alimenta a través del callback
+  registrado en ``init_progress_system()`` (ver A1 en
+  ``Backend/utils.py::create_progress_queue()`` y
+  ``Backend/simulator.py::set_progress_callback()``) y la traduce a frames SSE
+  (``data: {...}\\n\\n``). Usa ``asyncio.to_thread()`` para leer la cola
+  (bloqueante por diseño) sin bloquear el event loop — ver el docstring de
+  ``_progress_stream()`` para el porqué.
+
+Limitación conocida y aceptada para este MVP (documentada también en
+``Docs/02_Backend_Python.md``): existe una sola cola de progreso global,
+compartida por todas las requests. Alcanza para el modelo de uso real (un
+visor VR, un experimento a la vez, disparado desde el GameObject "Boton" —
+ver ``Assets/Scripts/Controllers/SimulationControllerVR.cs``), pero no aísla
+el progreso si en el futuro llegan a correr simulaciones concurrentes.
 
 Para correr localmente (una vez instaladas las dependencias de requirements.txt):
 
@@ -29,7 +37,8 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import AsyncGenerator, Any, Dict
+import queue
+from typing import AsyncGenerator, Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -89,6 +98,54 @@ EXPERIMENTS = {
 
 
 # ---------------------------------------------------------------------------
+# Progreso en vivo (Semana 2 del Plan Maestro, A2) — conecta GET
+# /simulate/stream con el callback de progreso que simulator.py soporta desde
+# A1 (ver Backend/simulator.py::set_progress_callback y
+# Backend/utils.py::create_progress_queue).
+# ---------------------------------------------------------------------------
+
+_progress_queue: Optional["queue.Queue"] = None
+
+
+def init_progress_system() -> None:
+    """Crea la cola de progreso y la registra como callback en cada módulo de
+    experimento (hoy solo simulator.py/grangier_hwp; queda listo para cuando
+    se agregue wave_interference u otro experimento a EXPERIMENTS, siempre
+    que también implemente set_progress_callback()).
+
+    Se llama una sola vez, en el evento startup de FastAPI — no en cada
+    request — porque la cola tiene que sobrevivir entre POST /simulate y
+    GET /simulate/stream, que llegan como requests HTTP independientes.
+    """
+    global _progress_queue
+    _progress_queue, callback = utils.create_progress_queue()
+    for module in EXPERIMENTS.values():
+        module.set_progress_callback(callback)
+
+
+def _drain_progress_queue() -> None:
+    """Vacía cualquier progreso sin consumir de una corrida anterior.
+
+    Se llama al arrancar POST /simulate: si nadie llegó a abrir GET
+    /simulate/stream a tiempo la vez pasada (o el cliente se desconectó a
+    medias), no queremos que esos eventos viejos se mezclen con el progreso
+    de la corrida nueva la próxima vez que alguien sí se conecte.
+    """
+    if _progress_queue is None:
+        return
+    while True:
+        try:
+            _progress_queue.get_nowait()
+        except queue.Empty:
+            break
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    init_progress_system()
+
+
+# ---------------------------------------------------------------------------
 # POST /simulate — versión síncrona sobre red del flujo que hoy corre
 # Backend/main.py como subproceso.
 # ---------------------------------------------------------------------------
@@ -103,6 +160,7 @@ def run_simulation(request: SimulationRequest) -> Dict[str, Any]:
         )
 
     params = _model_to_dict(request.parameters)
+    _drain_progress_queue()
 
     try:
         result = module.run(params)
@@ -116,26 +174,60 @@ def run_simulation(request: SimulationRequest) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# GET /simulate/stream — DRAFT de SSE (Fase 1.3, progreso en vivo).
+# GET /simulate/stream — SSE real (Semana 2 del Plan Maestro, A2).
 # ---------------------------------------------------------------------------
 
-async def _draft_progress_stream() -> AsyncGenerator[str, None]:
-    """Placeholder: emite un único evento SSE de marcador de posición.
+_STREAM_POLL_TIMEOUT_S = 1.0  # cada cuánto se manda un keep-alive si no hay progreso nuevo
 
-    TODO (Semana 2 del Plan Maestro): reemplazar por progreso real. Probablemente
-    haga falta que simulator.py acepte un callback/asyncio.Queue para alimentar
-    este generador corrida por corrida, en vez de depender de
-    utils.emit_progress() imprimiendo a stdout (que solo tiene sentido en el
-    modelo de subproceso de main.py, no en un servidor persistente).
+
+async def _progress_stream() -> AsyncGenerator[str, None]:
+    """Traduce la cola de progreso (alimentada por simulator.py vía el
+    callback registrado en init_progress_system()) a frames SSE
+    ``data: {...}\\n\\n``.
+
+    ``_progress_queue.get(timeout=...)`` es una llamada BLOQUEANTE de
+    queue.Queue — a propósito, ver utils.create_progress_queue(). Llamarla
+    directamente aquí adentro de este generador async bloquearía el event
+    loop entero de asyncio hasta _STREAM_POLL_TIMEOUT_S segundos en cada
+    iteración, lo cual serializaría TODAS las requests concurrentes mientras
+    tanto (incluido POST /simulate de otros clientes). ``asyncio.to_thread()``
+    corre esa llamada bloqueante en un hilo del threadpool en vez del event
+    loop, evitando el problema.
     """
-    payload = {"type": "progress", "status": "draft-not-yet-implemented"}
-    yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-    await asyncio.sleep(0)
+    if _progress_queue is None:
+        # No debería pasar en la práctica (init_progress_system() corre en
+        # startup antes de aceptar requests), pero cubrimos el caso por si
+        # alguien llega a llamar este generador en un contexto de pruebas
+        # que no dispara el evento startup.
+        payload = {"type": "end", "status": "error",
+                    "message": "Sistema de progreso no inicializado (init_progress_system no corrió)."}
+        yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        return
+
+    while True:
+        try:
+            payload = await asyncio.to_thread(_progress_queue.get, True, _STREAM_POLL_TIMEOUT_S)
+        except queue.Empty:
+            yield ": keep-alive\n\n"
+            continue
+
+        yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+        if payload.get("type") == "end":
+            break
 
 
 @app.get("/simulate/stream")
 async def stream_simulation_progress() -> StreamingResponse:
-    return StreamingResponse(_draft_progress_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        _progress_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # evita que nginx/proxies hagan buffering del stream
+        },
+    )
 
 
 if __name__ == "__main__":

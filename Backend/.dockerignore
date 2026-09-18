@@ -1,0 +1,22 @@
+# Backend/.dockerignore — contexto de build para Backend/Dockerfile.
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Salidas generadas por cada corrida del simulador (mismo criterio que el
+# .gitignore de la raíz del repo: no pertenecen ni al repo ni a la imagen).
+output.json
+*.csv
+
+# Documentación de diseño (ver A1/A2 en Docs/04_Plan_Maestro_Migracion.md),
+# no código que server.py o simulator.py importen.
+*.stub
+
+# Secretos locales — nunca deben terminar dentro de una imagen.
+.env
+
+.git/
+.gitignore

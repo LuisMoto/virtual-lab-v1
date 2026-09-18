@@ -1,7 +1,7 @@
 # 04. Plan Maestro de Migración — Simulador Óptico VR
 
 **Tipo de documento**: Plan de proyecto (fuente: `PLAN_MAESTRO_10_SEMANAS.pdf`, fecha original 2026-08-22). Este archivo es la versión versionada en Markdown del mismo plan — vive en `Docs/` junto con el resto de la documentación técnica para que no dependa de un PDF suelto y quede sujeto a control de versiones como cualquier otro documento del proyecto.
-**Estado de ejecución**: en curso — Semana 1 iniciada el 2026-08-26 (ver §5, Estado de avance).
+**Estado de ejecución**: en curso — Semana 2 completada el 2026-09-17, con verificación en vivo pendiente por bloqueos de red del entorno de desarrollo, no del código (ver §5, Estado de avance).
 
 ---
 
@@ -89,7 +89,22 @@ Esta sección se actualiza conforme avanza cada semana — es el punto donde est
 
 **Pendiente explícito para Semana 2** (no adelantado esta semana, a propósito): conectar el progreso real de la simulación al endpoint SSE (hoy `simulator.py` solo emite progreso por `stdout` vía `utils.emit_progress()`, un mecanismo pensado para el subproceso de `main.py`, no para un servidor persistente); implementar el cliente `UnityWebRequest` en Unity (1.4); Dockerización del backend (1.5).
 
-### Semanas 2–10 — No iniciadas
+### Semana 2 (2026-09-17) — Completada (Pista A + Pista B; ver notas de infraestructura)
+
+División de trabajo detallada en `SEMANA_2_ENTREGABLES.md` (Pista A = Backend/Python, Pista B = Unity/C#).
+
+| Entregable del plan | Estado | Dónde |
+|---|---|---|
+| 1.3 — `GET /simulate/stream` real (A2) | Implementado | `Backend/server.py` — ya no es placeholder: `init_progress_system()` en `@app.on_event("startup")`, generador `_progress_stream()` con `asyncio.to_thread()` para no bloquear el event loop (corrige un bug del diseño original en `server_sse_handler.py.stub`, que llamaba `.get()` bloqueante directo dentro del generador async). Ver `02_Backend_Python.md` §5. |
+| 1.3 (soporte) — callback de progreso (A1) | Implementado | `Backend/simulator.py` (`set_progress_callback()`/`_emit_progress()`) + `Backend/utils.py` (`create_progress_queue()`) — el modo CLI (`main.py`) no cambia de comportamiento; el modo servidor alimenta la cola que consume el SSE. Ver `02_Backend_Python.md` §3-4. |
+| 1.4 — Cliente `UnityWebRequest` + SSE (B1-B3) | Implementado y committeado | `Assets/Scripts/Networking/SimulationClient.cs`, `SSEStreamReader.cs`, integrados en `SimulationControllerVR.cs`. Commit `a5e9b2e` en `semana-2/integracion-red` (local). |
+| 1.5 — Dockerización (A3) | Implementado, sin build-test en esta sesión | `Backend/Dockerfile` + `Backend/docker-compose.yml` + `Backend/.dockerignore` — imagen `python:3.10-slim`, usuario sin privilegios, expone `0.0.0.0:8000`. **No se pudo ejecutar `docker build`/`docker run`** en el entorno donde se escribió (sin `docker` instalado ahí) — pendiente de un build real antes de considerarlo cerrado del todo. |
+| A4 — Testing + docs | Parcial | `Backend/tests/test_sse_client.py` (nuevo, integración vía `http.client`, sin dependencias nuevas) — escrito y con su lógica de parseo SSE verificada de forma aislada, pero **no ejecutado contra un servidor real** (mismo bloqueo de red que impidió `docker build`: no se pudo instalar `fastapi`/`uvicorn` para levantar `server.py`). `02_Backend_Python.md` actualizado en vez de `Backend/README.md` (no existía; se prefirió no crear una segunda fuente de verdad junto a los `Docs/` numerados que ya documentan el backend). |
+| B4 — Pruebas end-to-end | No verificado en esta sesión | Requiere Unity Editor abierto (visor o Play Mode) con el backend corriendo — ninguna de las dos cosas es posible en esta sandbox. El wiring de escena (`Scene_DosDet.unity`/`Scene_TresDet.unity`) se hizo a mano vía YAML y se validó por diff/conteo de documentos, no visualmente. |
+
+**Bloqueos de infraestructura pendientes, no de código** (ver detalle en `02_Backend_Python.md` §9 y comentario de A3 arriba): el entorno donde se implementó todo esto tiene salida de red bloqueada hacia `github.com` (impide `git push`) y `pypi.org` (impide `pip install fastapi/uvicorn`, y por lo tanto tanto levantar `server.py` como construir la imagen Docker). Ambos son pasos de segundos desde una máquina normal — no representan trabajo pendiente de diseño o código, solo verificación en vivo que falta correr una vez.
+
+### Semanas 3–10 — No iniciadas
 
 Sin cambios sobre el plan original todavía. Se actualizará esta sección al cierre de cada semana.
 

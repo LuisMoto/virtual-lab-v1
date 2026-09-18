@@ -7,6 +7,43 @@ from typing import Any, Dict, List, Tuple
 import utils
 
 
+# ---------------------------------------------------------------------------
+# Progreso: callback en vez de print() directo (Plan Maestro, Semana 2, A1).
+#
+# Backend/main.py (CLI/subproceso) sigue funcionando exactamente igual que
+# antes: si nadie llama a set_progress_callback(), _emit_progress() cae de
+# vuelta a utils.emit_progress() (print a stdout), que es lo que Unity leía
+# vía subprocess.
+#
+# Backend/server.py (servidor persistente) llama a set_progress_callback()
+# una sola vez en su startup, con un callback que empuja a una queue.Queue
+# thread-safe (ver utils.create_progress_queue()) — así GET /simulate/stream
+# puede leer el progreso en vivo sin que este módulo sepa nada de FastAPI/SSE.
+# ---------------------------------------------------------------------------
+
+progress_callback = None
+
+
+def set_progress_callback(fn):
+    """
+    Registra un callback que se llama con cada línea de progreso.
+
+    Parámetros:
+        fn: función(payload: dict) -> None
+    """
+    global progress_callback
+    progress_callback = fn
+
+
+def _emit_progress(payload: Dict[str, Any]) -> None:
+    """Emite una línea de progreso al callback registrado, o si no hay
+    ninguno (ejecución CLI vía main.py), cae de vuelta a utils.emit_progress()."""
+    if progress_callback is not None:
+        progress_callback(payload)
+    else:
+        utils.emit_progress(payload)
+
+
 MAX_NUM_PULSES = 2_000_000
 MAX_RUNS = 200
 MAX_ANGLES = 360
@@ -138,7 +175,7 @@ def simulate_physical_experiment(mode: int, num_pulses: int, rng: random.Random,
 
 def _emit_run_progress(angle: float, mode: int, num_test: int,
                        run: Dict[str, Any], cfg: Dict[str, Any]) -> None:
-    utils.emit_progress({
+    _emit_progress({
         "type": "progress",
         "experiment": EXPERIMENT,
         "angle_deg": angle,
@@ -170,7 +207,7 @@ def run(params: dict) -> Dict[str, Any]:
                              cfg["hwp_step_angle_deg"])
     total_runs = len(angles) * cfg["num_runs"] * 2
 
-    utils.emit_progress({
+    _emit_progress({
         "type": "start", "experiment": EXPERIMENT,
         "num_angles": len(angles), "total_runs": total_runs,
     })
@@ -205,7 +242,7 @@ def run(params: dict) -> Dict[str, Any]:
                 "three_detectors": {"runs": runs_3d},
             })
     except ValueError as e:
-        utils.emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "error"})
+        _emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "error"})
         return utils.build_error_response(f"Error en la simulación: {e}",
                                           experiment=EXPERIMENT)
 
@@ -268,7 +305,7 @@ def run(params: dict) -> Dict[str, Any]:
     if csv_error is not None:
         meta["csv_warning"] = f"No se pudo escribir el CSV: {csv_error}"
 
-    utils.emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "ok"})
+    _emit_progress({"type": "end", "experiment": EXPERIMENT, "status": "ok"})
     return utils.build_ok_response(EXPERIMENT, results, meta)
 
 if __name__ == "__main__":
