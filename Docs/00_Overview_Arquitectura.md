@@ -1,9 +1,11 @@
 # 00. Overview y Arquitectura Real — virtual-lab-v1
 
-**Tipo de documento**: As-built (estado real).
+**Tipo de documento**: As-built (estado real observado en el repositorio, no aspiracional).
 **Fecha de auditoría**: 2026-08-26
 **Rama auditada**: `MVP_escenas`
 **Commit HEAD al momento de auditar**: `f4d59d6` — "refactor: homologacion de codigo, JSON y convenciones a ingles"
+
+> ⚠️ **Advertencia sobre el estado del repositorio**: al momento de esta auditoría hay una reorganización masiva **staged pero sin commitear** (~215 cambios: 57 altas, 97 renombres, 12 modificaciones, 9 borrados, 38 archivos nuevos sin trackear). Este documento describe el **working tree actual** (lo que hay en disco ahora, que es lo más fiel a "qué va a pasar" en el próximo commit), no únicamente el último commit. Donde el working tree difiere de HEAD de forma relevante, se indica explícitamente. Ver `03_Cumplimiento_y_Brechas.md` sección "Estado del commit en curso" para el detalle completo de qué incluye ese cambio pendiente.
 
 ---
 
@@ -35,7 +37,7 @@ El proyecto es multi-colaborador: además de este remoto, el historial de commit
 └─────────────────────────┘                             └──────────────────────────┘
 ```
 
-**Esto es lo que corre hoy en producción — no todavía una arquitectura cliente-servidor con WebSocket/FastAPI.** Es un patrón **subprocess + streaming por stdout + intercambio de archivos**, y está bien ejecutado: sencillo, sin dependencias de red, y con las protecciones que se detallan abajo. Esa distinción entre "lo que corre hoy" y "lo que describe la Guía" ya no es una brecha de documentación desactualizada (como se diagnosticó en la brecha #3 de `03_Cumplimiento_y_Brechas.md`, cuando la Guía describía FastAPI/WebSocket sin que existiera ni una línea de ese código): **FastAPI + SSE (Fase 1) y WebSockets (Fase 2) son el objetivo oficial de arquitectura**, según el `04_Plan_Maestro_Migracion.md` — la migración arrancó la Semana 1 (2026-08-26) con `Backend/server.py` (borrador de `POST /simulate` funcional + SSE placeholder) y el singleton `SceneController.cs`. Mientras dure la transición, este patrón de subproceso sigue siendo el que efectivamente ejecuta cada corrida — no se retira hasta que la Fase 1 (y luego la Fase 2) esté completa.
+**Esto NO es una arquitectura cliente-servidor con WebSocket/FastAPI** (aunque la Guía de Estándares del proyecto describe esa arquitectura en sus secciones 2, 6 y 7 — ver brecha #3 en `03_Cumplimiento_y_Brechas.md`). Es un patrón **subprocess + streaming por stdout + intercambio de archivos**, y está bien ejecutado: sencillo, sin dependencias de red, y con las protecciones que se detallan abajo. La meta a futuro corto es la conversión a **WebSocket/FastAPI**.
 
 ### 2.1 Ciclo de vida de una corrida
 
@@ -91,5 +93,4 @@ Que estos paquetes estén instalados **no implica que se usen** en las escenas a
 - `01_Frontend_Unity.md` — inventario detallado de scripts C#, escenas y el patrón Wire/DTO.
 - `02_Backend_Python.md` — detalle de `main.py`, `utils.py`, `simulator.py`, `wave_simulator.py`, contratos de `input.json`/`output.json`.
 - `03_Cumplimiento_y_Brechas.md` — brechas encontradas frente a `ESTANDARES_DOCUMENTACION_TECNICA.md` (que ya existía en este repo antes de esta auditoría), incluyendo el hallazgo crítico de esta sesión.
-- `04_Plan_Maestro_Migracion.md` — el plan de 10 semanas hacia la arquitectura de red (FastAPI/SSE → WebSockets), con su estado de avance semana a semana. Es la fuente de verdad de hacia dónde va esta arquitectura; este documento (00) describe de dónde viene y qué corre hoy mismo.
-- `ESTANDARES_DOCUMENTACION_TECNICA.md` — la guía de estándares del equipo, actualmente en v2.2.0, responsable Luis Moto.
+- `ESTANDARES_DOCUMENTACION_TECNICA.md` — la guía de estándares del equipo (v2.0.0, fechada 2026-08-26), preexistente a esta auditoría. No se modificó; se evalúa en el doc 03.

@@ -322,8 +322,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d854a7948639e24ab1418655675794e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  laserUV: {fileID: 1283912749}
-  cristal: {fileID: 280992340}
+  uvLaser: {fileID: 1283912749}
+  crystal: {fileID: 280992340}
 --- !u!23 &114822515
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -776,11 +776,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 162e4dcb783add24c9dfdefb3dbb6b5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rayoTrans: {fileID: 3825795567898182684}
-  rayoRefle: {fileID: 9215488266859616591}
-  "detSe\xF1al": {fileID: 1822750258}
-  detRefle: {fileID: 39297262}
-  dLogic: {fileID: 343714377}
+  transmittedBeam: {fileID: 3825795567898182684}
+  reflectedBeam: {fileID: 9215488266859616591}
+  signalDetector: {fileID: 1822750258}
+  reflectedDetector: {fileID: 39297262}
+  detectorLogic: {fileID: 343714377}
+--- !u!114 &240348332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444616075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a572c22de88e440290e4272bae0430b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backendUrl: http://192.168.100.32:8000
 --- !u!1 &280992334
 GameObject:
   m_ObjectHideFlags: 0
@@ -903,12 +916,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c124f7d8db70ef049bf064146d8d0919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rayoPump: {fileID: 1756980391}
-  rayoSignal: {fileID: 1779889597}
-  rayoIdler: {fileID: 951803991}
-  divisorHaz: {fileID: 197351199}
-  pared: {fileID: 0}
-  detTest: {fileID: 618782268}
+  pumpBeam: {fileID: 1756980391}
+  signalBeam: {fileID: 1779889597}
+  idlerBeam: {fileID: 951803991}
+  beamSplitter: {fileID: 197351199}
+  wall: {fileID: 0}
+  witnessDetector: {fileID: 618782268}
 --- !u!114 &280992341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -921,12 +934,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c124f7d8db70ef049bf064146d8d0919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rayoPump: {fileID: 1756980391}
-  rayoSignal: {fileID: 1779889597}
-  rayoIdler: {fileID: 951803991}
-  divisorHaz: {fileID: 197351199}
-  pared: {fileID: 0}
-  detTest: {fileID: 0}
+  pumpBeam: {fileID: 1756980391}
+  signalBeam: {fileID: 1779889597}
+  idlerBeam: {fileID: 951803991}
+  beamSplitter: {fileID: 197351199}
+  wall: {fileID: 0}
+  witnessDetector: {fileID: 0}
 --- !u!1 &287888614
 GameObject:
   m_ObjectHideFlags: 0
@@ -1013,9 +1026,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8bbf3a6e084bb14890b157ef0e3df8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  detTest: {fileID: 618782268}
-  "detSe\xF1al": {fileID: 1822750258}
-  detRefle: {fileID: 39297262}
+  witnessDetector: {fileID: 618782268}
+  signalDetector: {fileID: 1822750258}
+  reflectedDetector: {fileID: 39297262}
 --- !u!4 &343714378
 Transform:
   m_ObjectHideFlags: 0
@@ -1794,6 +1807,20 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1005342424d96184b8e1a7d176d602dc, type: 3}
+--- !u!114 &762134525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444616075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f46029ac5fbd48a48ad9137bc4ddc6a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backendUrl: http://192.168.100.32:8000
+  requestTimeoutSecs: 300
 --- !u!4 &817714661 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d5a065ff5c16f2a4c8f49527d92ab3c5,
@@ -3091,14 +3118,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38b8c0d51947e024ea0fcef85e484b20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rutaPython: python
-  nombreScriptPython: main.py
-  experimento: 0
   simulationClient: {fileID: 762134525}
   sseStreamReader: {fileID: 240348332}
   numPulses: 2000
   numRuns: 5
-  OnSimulacionCompletada:
+  experiment: 0
+  OnSimulationCompleted:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
@@ -3113,7 +3138,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  OnProgresoRecibido:
+  OnProgressReceived:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
@@ -3128,7 +3153,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  OnSimulacionError:
+  OnSimulationError:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1444616079}
@@ -3155,8 +3180,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3400b660265c49a48a8412f5e87ec2ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panelCoincidencias: {fileID: 0}
-  panelG2: {fileID: 0}
+  coincidencesPanel: {fileID: 0}
+  g2Panel: {fileID: 0}
+  expectedMode: 3
 --- !u!4 &1444616078
 Transform:
   m_ObjectHideFlags: 0
@@ -3184,16 +3210,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ea03d444d3957b4f8070aec2e5b435e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvasFlotante: {fileID: 347397612}
-  vistaCarga: {fileID: 1584624023}
-  textoCarga: {fileID: 955185849}
-  vistaTerminal: {fileID: 598514130}
-  textoTerminal: {fileID: 2032950976}
-  scrollTerminal: {fileID: 598514132}
-  vistaResumen: {fileID: 2079926776}
-  textoResumen: {fileID: 647992603}
-  integrador: {fileID: 1444616076}
-  modoDetectorEsperado: 2
+  floatingCanvas: {fileID: 347397612}
+  loadingView: {fileID: 1584624023}
+  loadingText: {fileID: 955185849}
+  terminalView: {fileID: 598514130}
+  terminalText: {fileID: 2032950976}
+  terminalScroll: {fileID: 598514132}
+  summaryView: {fileID: 2079926776}
+  summaryText: {fileID: 647992603}
+  controller: {fileID: 1444616076}
+  expectedDetectorMode: 2
 --- !u!1001 &1532251959
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5252,30 +5278,3 @@ SceneRoots:
   - {fileID: 1444616078}
   - {fileID: 1080337542}
   - {fileID: 1008254639}
---- !u!114 &762134525
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1444616075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f46029ac5fbd48a48ad9137bc4ddc6a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  backendUrl: http://localhost:8000
-  requestTimeoutSecs: 300
---- !u!114 &240348332
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1444616075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a572c22de88e440290e4272bae0430b5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  backendUrl: http://localhost:8000
