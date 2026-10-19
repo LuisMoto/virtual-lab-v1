@@ -1,7 +1,7 @@
 # 04. Plan Maestro de Migración — Simulador Óptico VR
 
 **Tipo de documento**: Plan de proyecto (fuente: `PLAN_MAESTRO_10_SEMANAS.pdf`, fecha original 2026-08-22). Este archivo es la versión versionada en Markdown del mismo plan — vive en `Docs/` junto con el resto de la documentación técnica para que no dependa de un PDF suelto y quede sujeto a control de versiones como cualquier otro documento del proyecto.
-**Estado de ejecución**: en curso — Semana 2 completada el 2026-09-17, con verificación en vivo pendiente por bloqueos de red del entorno de desarrollo, no del código (ver §5, Estado de avance).
+**Estado de ejecución**: en curso — Semana 2 completada el 2026-09-17 (+ hardening Wi-Fi el 2026-09-19). **Replanteado el 2026-10-19**: entre el 19-sep y el 19-oct (4 semanas) no se avanzó ninguna semana nueva del plan — el único commit de ese periodo (`aa1c299`, 19-sep, de Luis) fue la actualización manual de `backendUrl` en ambas escenas, sin verificación end-to-end con el visor físico ni avance de Fase 2. Fecha límite movida de 2026-11-04 (10 semanas desde el inicio) a **2026-11-25**, para absorber ese atraso de 4 semanas sin recortar el alcance de Fase 2. El cronograma de la Fase 3 sí se recorta — ver §3 y §5.1 (Replan) para el detalle y las razones de cada recorte.
 
 ---
 
@@ -47,6 +47,8 @@ El objetivo de este Plan Maestro es ejecutar una migración hacia una **arquitec
 
 ## 3. Cronograma del Proyecto
 
+**Cronograma original (vigente hasta el 2026-10-19 — ver §5.1 para el replan activo):**
+
 | Semana | Hitos Principales y Entregables |
 |---|---|
 | Semana 1 | Lanzamiento de `SceneController`, limpieza de C# y borrador inicial de FastAPI POST. |
@@ -59,6 +61,17 @@ El objetivo de este Plan Maestro es ejecutar una migración hacia una **arquitec
 | Semana 8 | Diseño de interfaces diegéticas y refinamiento de inputs. |
 | Semana 9 | Configuración de URP, PBR y procesos de Lightmapping. |
 | Semana 10 | Cierre de Proyecto: control de calidad final, medición de rendimiento y pulido general. |
+
+**Cronograma replanteado (vigente desde el 2026-10-19 — reemplaza la tabla de arriba de aquí en adelante; ver §5.1 para el razonamiento completo del replan):**
+
+| Semana (fecha de inicio) | Hitos Principales y Entregables | Pista A (Nathalia) | Pista B (Luis) |
+|---|---|---|---|
+| Semana 3 (2026-10-20) | Cierre real de Fase 1 (verificación física del visor Wi-Fi, checklist en `02_Backend_Python.md` §10.5) + arranque de Fase 2 | Diseño de `SimulationSession` y endpoint WebSocket (2.1) | Verificación end-to-end del visor Wi-Fi (B4 pendiente) + investigación de `NativeWebSocket` para Unity |
+| Semana 4 (2026-10-27) | Fase 2 en progreso: WebSocket funcional de lado servidor y cliente | `SimulationSession` completo + endpoint WS (2.1) | Integración `NativeWebSocket` en Unity (2.2) |
+| Semana 5 (2026-11-03) | Cierre de Fase 2: integración, latencia, gating de mesa | Soporte de pruebas de latencia/integración desde el backend | `XRSocketInteractor` + `TableValidator` (2.3) + pruebas de integración end-to-end |
+| Semana 6 (2026-11-10) | Fase 3 (alcance recortado — ver §5.1): física del experimento nuevo priorizado | Física del **1 experimento nuevo priorizado** (3.1 recortado) | Escena/`TableLayoutConfig` para ese mismo experimento |
+| Semana 7 (2026-11-17) | Fase 3: integración del experimento nuevo + pulido mínimo viable | Soporte/ajustes de datos según pruebas en Unity | Integración del experimento en escena + ajustes de inputs (3.2 recortado a lo esencial, sin paneles diegéticos nuevos si el tiempo no alcanza) |
+| Semana 8 (2026-11-24, cierre 2026-11-25) | Cierre de proyecto: QA final, pulido visual mínimo (sin Lightmapping completo salvo que quede tiempo), entrega | QA de backend, docs finales | QA de Unity, pulido visual mínimo viable, entrega |
 
 ---
 
@@ -115,15 +128,32 @@ División de trabajo detallada en `SEMANA_2_ENTREGABLES.md` (Pista A = Backend/P
 
 Checklist físico restante (no es código, ver `02_Backend_Python.md` §10.5 para el detalle completo): confirmar misma red Wi-Fi sin aislamiento de clientes, aceptar el aviso del Firewall de Windows la primera vez que corra el backend, leer la IP del banner nuevo, actualizarla en `backendUrl` (ambos componentes, ambas escenas) y reconstruir/reinstalar el APK en el Quest — el fix de Android solo aplica a un build nuevo, no a uno ya instalado.
 
-### Semanas 3–10 — No iniciadas
+### Semanas 3–10 (plan original) — No iniciadas, reemplazadas por el replan de §5.1
 
-Sin cambios sobre el plan original todavía. Se actualizará esta sección al cierre de cada semana.
+El plan original numeraba la Fase 2 en Semanas 3-5 y la Fase 3 en Semanas 6-10, contando desde el 2026-08-26. Nunca se avanzó ninguna de ellas — ver §5.1 para el diagnóstico del atraso y el cronograma que las reemplaza.
+
+## 5.1 Replan (2026-10-19)
+
+**Diagnóstico**: entre el cierre de Semana 2 (2026-09-17, más el hardening Wi-Fi del 2026-09-19) y hoy (2026-10-19) pasaron 4 semanas sin avanzar ninguna semana nueva del plan. El único commit de ese periodo (`aa1c299`, 2026-09-19, de Luis) actualizó `backendUrl` a `http://192.168.100.32:8000` en ambas escenas — un paso real del checklist físico de §10.5 — pero no se completó el resto de ese checklist (no hay evidencia de rebuild/reinstalación del APK, el commit mismo dice "without apk in meta quest"), así que B4 (pruebas end-to-end) sigue sin verificarse, y Fase 2 no inició. Con 10 semanas originales planeadas desde el 2026-08-26, el plan terminaría el 2026-11-04; a la fecha de este replan ya pasaron 8 de esas 10 semanas con solo 2 semanas de trabajo real completadas.
+
+**Decisión de negocio (confirmada con Luis el 2026-10-19)**: la fecha límite se mueve del 2026-11-04 al **2026-11-25** (3 semanas adicionales) para absorber el atraso sin sacrificar la Fase 2 completa. El equipo que ejecuta el resto del plan son **Nathalia (Pista A, backend) y Luis (Pista B, Unity)** — el mismo split de Semana 2 — sin Ernesto Pérez en esta etapa.
+
+**Qué se preserva sin recorte**: toda la Fase 2 (2.1 `SimulationSession`+WebSocket, 2.2 `NativeWebSocket` en Unity, 2.3 `XRSocketInteractor`+`TableValidator`) se mantiene completa, en Semanas 3-5 del nuevo cronograma — es la pieza arquitectónica central del plan maestro y recortarla invalidaría el objetivo de "interacción en tiempo real" que motiva todo el proyecto.
+
+**Qué se recorta y por qué**: la Fase 3 original (3.1 dos experimentos nuevos, 3.2 interfaces diegéticas, 3.3 URP+PBR+Lightmapping completo) no cabe entera en las 3 semanas que quedan (Semanas 6-8 del nuevo cronograma) después de proteger la Fase 2 completa. Recortes concretos:
+- **3.1**: de **dos** experimentos nuevos a **uno solo**, el que se priorice como más demostrable/relevante para el objetivo didáctico del proyecto (ver `README.md` §"Por qué existe este proyecto") — pendiente de que Luis/Nathalia elijan cuál.
+- **3.2**: interfaces diegéticas se reducen a "lo esencial" (ajustes de inputs para que el experimento nuevo funcione en VR), no la evolución visual completa de paneles a pantallas integradas que describía el plan original.
+- **3.3**: Lightmapping/PBR completo queda como aspiracional ("si queda tiempo en Semana 8"), no como entregable garantizado — se prioriza que el proyecto cierre funcional sobre que cierre visualmente pulido.
+
+**Qué pasa si este replan tampoco se cumple**: si para el cierre de Semana 5 (2026-11-10) la Fase 2 no está completa, la Fase 3 completa queda fuera de alcance del 2026-11-25 — en ese escenario, la recomendación sería entregar con Fase 1+2 cerradas y Fase 3 explícitamente fuera de alcance, en vez de forzar una Fase 3 a medias que comprometa la calidad de lo ya construido.
 
 ---
 
 ## 6. Ver también
 
 - `00_Overview_Arquitectura.md` §2 — arquitectura vigente hoy (subproceso + `stdout` + archivos), y cómo coexiste con esta migración.
+- `02_Backend_Python.md` §10.5 — checklist físico pendiente de verificación (B4) antes de poder cerrar Fase 1 del todo.
 - `02_Backend_Python.md` — detalle de los módulos que `server.py` reutiliza sin duplicar (`simulator.py`, `utils.py`).
 - `ESTANDARES_DOCUMENTACION_TECNICA.md` §2, §5.11, §6, §7.4 — cómo cada fase de este plan se traduce en convenciones de código concretas.
 - `03_Cumplimiento_y_Brechas.md` — brechas encontradas antes de que arrancara este plan; varias de sus recomendaciones pendientes (§4, folder por capas) ya se resolvieron como parte de la Semana 1.
+- §5.1 (arriba) — el replan vigente desde 2026-10-19: nueva fecha límite (2026-11-25), equipo (Nathalia + Luis), y alcance recortado de Fase 3.
